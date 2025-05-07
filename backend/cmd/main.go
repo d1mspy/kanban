@@ -1,7 +1,16 @@
 package main
 
-import "fmt"
+import (
+	"kanban/internal/config"
+	"kanban/internal/db"
+	"kanban/internal/server"
+)
 
-func main(){
-	fmt.Println("Hello world")
+func main() {
+	db := db.NewPostgres()
+	defer db.Close()
+
+	s := server.New(config.Load().Host)
+
+	s.Start()
 }
