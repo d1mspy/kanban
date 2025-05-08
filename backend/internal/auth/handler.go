@@ -8,17 +8,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type request struct {
+type authRequest struct {
 	Username string `json:"username"`
     Password string `json:"password"`
 }
 
 func RegisterHandler(db *sql.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		var req request
+		var req authRequest
 		if err := ctx.ShouldBindJSON(&req); err != nil {
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"detail": "Invalid JSON body",
+				"detail": "Invalid request body",
 			})
 			return
 		}
@@ -58,7 +58,7 @@ func RegisterHandler(db *sql.DB) gin.HandlerFunc {
 
 func LoginHandler(db *sql.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		var req request
+		var req authRequest
 		if err := ctx.ShouldBindJSON(&req); err != nil {
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"detail": "Invalid JSON body",

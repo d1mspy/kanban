@@ -3,6 +3,7 @@ package server
 import (
 	"database/sql"
 	"kanban/internal/auth"
+	"kanban/internal/board"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -38,6 +39,11 @@ func (r *Server) newAPI() *gin.Engine {
 		userID, _ := auth.GetUserID(ctx)
 		ctx.JSON(http.StatusOK, gin.H{"user_id": userID})
 	})
+	protectedGroup.POST("/boards", board.CreateBoardHandler(r.db))
+	protectedGroup.GET("/boards", board.GetAllBoardsHandler(r.db))
+	protectedGroup.GET("/boards/:id", board.GetBoardHandler(r.db))
+	protectedGroup.PUT("/boards/:id", board.UpdateBoardHandler(r.db))
+	protectedGroup.DELETE("/boards/:id", board.DeleteBoardHandler(r.db))
 
 	return engine
 }

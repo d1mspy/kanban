@@ -19,13 +19,25 @@ func NewPostgres() *sql.DB {
 	}
 
 	if err = InitDatabase(db); err != nil {
-		log.Fatal("Failed to init db:", err)
+		log.Fatal("Failed to init DB:", err)
 	}
 
 	return db
 }
 
 func InitDatabase(db *sql.DB) error {
-	_, err := db.Exec(QueryCreateUserTable)
-	return err
+	queries := []string{
+		QueryCreateUserTable,
+		QueryCreateBoardTable,
+		QueryCreateColumnTable,
+		QueryCreateTaskTable,
+	}
+
+	for _, q := range queries {
+		if _, err := db.Exec(q); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
