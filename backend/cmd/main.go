@@ -2,15 +2,15 @@ package main
 
 import (
 	"kanban/internal/config"
-	"kanban/internal/db"
+	"kanban/internal/postgres"
 	"kanban/internal/server"
 )
 
 func main() {
-	db := db.NewPostgres()
+	db := postgres.NewPostgres()
 	defer db.Close()
 
-	s := server.New(config.Load().Host)
+	s := server.New(config.Load().Host, db)
 
 	s.Start()
 }
