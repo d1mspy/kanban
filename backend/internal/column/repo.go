@@ -138,19 +138,22 @@ func UpdateColumn(db *sql.DB, userID, columnID string, newName *string, newPos *
 	}
 
 	var maxPos int
-	err = tx.QueryRow(postgres.QueryGetMaxColumnPosition, boardID).Scan(&maxPos)
-	if err != nil {
-		return err
+	if newPos != nil {
+		err = tx.QueryRow(postgres.QueryGetMaxColumnPosition, boardID).Scan(&maxPos)
+		if err != nil {
+			return err
+		}
+		if *newPos >= maxPos || *newPos <= 0 {
+			return errIncorrectPosition
+		}
 	}
-	if *newPos >= maxPos || *newPos <= 0 {
-		return errIncorrectPosition
-	}
+	
 
 	if newPos != nil && *newPos != oldPos {
 		if *newPos > oldPos {
 			_, err = tx.Exec(postgres.QueryMoveColumnsLeft, boardID, oldPos, *newPos)
 		} else {
-			_, err = tx.Exec(postgres.QueryMoveColumnsRight, boardID, oldPos, *newPos)
+			_, err = tx.Exec(postgres.QueryMoveColumnsRight, boardID, *newPos, oldPos)
 		}
 		if err != nil {
 			return err

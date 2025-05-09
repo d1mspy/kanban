@@ -70,7 +70,8 @@ const (
 	QueryGetAllColumns = `SELECT "column".* FROM "column"
 		JOIN board ON "column".board_id = board.id
 		WHERE "column".board_id = $1
-		AND board.user_id = $2`
+		AND board.user_id = $2
+		ORDER BY "column".position`
 	
 	QueryDeleteColumn = `DELETE FROM "column" WHERE id = $1`
 	

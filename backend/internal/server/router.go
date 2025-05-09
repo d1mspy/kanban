@@ -51,7 +51,7 @@ func (r *Server) newAPI() *gin.Engine {
 	protectedGroup.POST("/boards/:id/columns", column.CreateColumnHandler(r.db))
 	protectedGroup.GET("/boards/:id/columns", column.GetAllColumnsHandler(r.db))
 	protectedGroup.GET("/columns/:id", column.GetColumnHandler(r.db))
-	protectedGroup.PUT("/columns/:id", column.UpdateColumnHandler(r.db))
+	protectedGroup.PATCH("/columns/:id", column.UpdateColumnHandler(r.db))
 	protectedGroup.DELETE("/columns/:id", column.DeleteColumnHandler(r.db))
 
 	return engine
