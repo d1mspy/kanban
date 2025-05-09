@@ -47,6 +47,29 @@ func CreateBoardHandler(db *sql.DB) gin.HandlerFunc {
 	}
 }
 
+func GetAllBoardsHandler(db *sql.DB) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		userID, ok := auth.GetUserID(ctx)
+		if !ok {
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"detail": "No token",
+			})
+			return
+		}
+
+		boards, err := GetAllBoards(db, userID); 
+		
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"detail": "Failed to load all board data",
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, boards)
+	}
+}
+
 func GetBoardHandler(db *sql.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		id := ctx.Param("id")
@@ -134,28 +157,5 @@ func DeleteBoardHandler(db *sql.DB) gin.HandlerFunc {
 		}
 
 		ctx.Status(http.StatusOK)
-	}
-}
-
-func GetAllBoardsHandler(db *sql.DB) gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		userID, ok := auth.GetUserID(ctx)
-		if !ok {
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"detail": "No token",
-			})
-			return
-		}
-
-		boards, err := GetAllBoards(db, userID); 
-		
-		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"detail": "Failed to load all board data",
-			})
-			return
-		}
-
-		ctx.JSON(http.StatusOK, boards)
 	}
 }
