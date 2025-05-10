@@ -22,7 +22,7 @@ func CreateColumn(db *sql.DB, column Column, userID string) error {
 	defer tx.Rollback()
 
 	var exists bool
-	err = tx.QueryRow(postgres.QueryCheckBoardOwnership, column.BoardID, userID).Scan(&exists)
+	err = tx.QueryRow(postgres.QueryCheckBoardOwnershipForColumn, column.BoardID, userID).Scan(&exists)
 	if err != nil {
 		return err
 	}
@@ -129,7 +129,7 @@ func UpdateColumn(db *sql.DB, userID, columnID string, newName *string, newPos *
 	}
 
 	var ok bool
-	err = tx.QueryRow(postgres.QueryCheckBoardOwnership, boardID, userID).Scan(&ok)
+	err = tx.QueryRow(postgres.QueryCheckBoardOwnershipForColumn, boardID, userID).Scan(&ok)
 	if err != nil {
 		return err
 	}
@@ -186,7 +186,7 @@ func DeleteColumn(db *sql.DB, userID, columnID string) error {
 	}
 
 	var ok bool
-	err = tx.QueryRow(postgres.QueryCheckBoardOwnership, boardID, userID).Scan(&ok)
+	err = tx.QueryRow(postgres.QueryCheckBoardOwnershipForColumn, boardID, userID).Scan(&ok)
 	if err != nil {
 		return err
 	}

@@ -41,6 +41,7 @@ func CreateBoardHandler(db *sql.DB) gin.HandlerFunc {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"detail": "Failed to create board",
 			})
+			return
 		}
 
 		ctx.Status(http.StatusCreated)

@@ -5,6 +5,7 @@ import (
 	"kanban/internal/auth"
 	"kanban/internal/board"
 	"kanban/internal/column"
+	"kanban/internal/task"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -53,6 +54,12 @@ func (r *Server) newAPI() *gin.Engine {
 	protectedGroup.GET("/columns/:id", column.GetColumnHandler(r.db))
 	protectedGroup.PATCH("/columns/:id", column.UpdateColumnHandler(r.db))
 	protectedGroup.DELETE("/columns/:id", column.DeleteColumnHandler(r.db))
+
+	protectedGroup.POST("/columns/:id/tasks", task.CreateTaskHandler(r.db))
+	protectedGroup.GET("/columns/:id/tasks", task.GetAllTasksHandler(r.db))
+	protectedGroup.GET("/tasks/:id", task.GetTaskHandler(r.db))
+	protectedGroup.PATCH("/tasks/:id", task.UpdateTaskHandler(r.db))
+	protectedGroup.DELETE("/tasks/:id", task.DeleteTaskHandler(r.db))
 
 	return engine
 }

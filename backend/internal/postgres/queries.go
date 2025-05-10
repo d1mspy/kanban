@@ -18,7 +18,7 @@ const (
 
 	QueryCreateColumnTable = `CREATE TABLE IF NOT EXISTS "column"(
 		id uuid PRIMARY KEY,
-		board_id uuid REFERENCES "board"(id),
+		board_id uuid REFERENCES board(id) ON DELETE CASCADE,
 		created_at timestamptz NOT NULL,
 		updated_at timestamptz NOT NULL,
 		name text NOT NULL,
@@ -27,12 +27,14 @@ const (
 
 	QueryCreateTaskTable = `CREATE TABLE IF NOT EXISTS task(
 		id uuid PRIMARY KEY,
-		column_id uuid REFERENCES "column"(id),
+		column_id uuid REFERENCES "column"(id) ON DELETE CASCADE,
 		created_at timestamptz NOT NULL,
 		updated_at timestamptz NOT NULL,
 		name text NOT NULL,
 		description text NOT NULL,
-		position smallint NOT NULL
+		position smallint NOT NULL,
+		done boolean NOT NULL DEFAULT false,
+		deadline timestamptz
 	)`
 
 	QueryCreateUser = `INSERT INTO "user" (id, username, hashed_password, created_at) VALUES ($1, $2, $3, $4)`
@@ -53,7 +55,7 @@ const (
 
 	QueryGetMaxColumnPosition = `SELECT COALESCE(MAX(position), 0) + 1 FROM "column" WHERE board_id = $1`
 
-	QueryCheckBoardOwnership = `SELECT EXISTS (
+	QueryCheckBoardOwnershipForColumn = `SELECT EXISTS (
 		SELECT 1 FROM board WHERE id = $1 AND user_id = $2
 	)`
 
@@ -95,4 +97,65 @@ const (
 			position = COALESCE($2, position),
 			updated_at = $3
 		WHERE id = $4`
+
+	QueryCheckBoardOwnershipForTask = `SELECT EXISTS (
+		SELECT 1 FROM "column"
+		JOIN board ON "column".board_id = board.id
+		WHERE "column".id = $1 AND board.user_id = $2
+	)`
+
+	QueryGetTasksCount = `SELECT COUNT(*) FROM task WHERE column_id = $1`
+
+	QueryGetMaxTaskPosition = `SELECT COALESCE(MAX(position), 0) + 1 FROM task WHERE column_id = $1`
+
+	QueryCreateTask = `INSERT INTO task
+		(id, column_id, created_at, updated_at, name, description, position, done)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+	
+	QueryGetAllTasks = `SELECT * FROM task WHERE column_id = $1 ORDER BY position`
+
+	QueryGetColumnID = `SELECT column_id FROM task WHERE id = $1`
+
+	QueryGetTask = `SELECT * FROM task WHERE id = $1`
+
+	QueryUpdateTaskContent = `UPDATE task SET
+		name = COALESCE($1, name),
+		description = COALESCE($2, description),
+		done = COALESCE($3, done),
+		deadline = COALESCE($4, deadline),
+		updated_at = $5
+		WHERE id = $6`
+	
+	QueryUpdateTaskColumn = `UPDATE task SET
+		column_id = $1,
+		position = $2,
+		updated_at = $3
+		WHERE id = $4`
+
+	QueryMoveTasksForInsert = `UPDATE task
+		SET position = position + 1
+		WHERE column_id = $1
+		AND position >= $2`
+	
+	QueryMoveTaskForDelete = `UPDATE task
+		SET position = position - 1
+		WHERE column_id = $1
+		AND position > $2`
+	
+	QueryGetColumnIDAndPosition = `SELECT column_id, position FROM task WHERE id = $1`
+
+	QueryMoveTasksDown = `UPDATE task
+		SET position = position + 1
+		WHERE column_id = $1 AND position >= $2 AND position < $3`
+
+	QueryMoveTasksUp = `UPDATE task
+		SET position = position - 1
+		WHERE column_id = $1 AND position > $2 AND position <= $3`
+
+	QueryUpdateTaskPosition = `UPDATE task
+		SET position = $1, updated_at = $2
+		WHERE id = $3`
+
+	QueryDeleteTask = `DELETE FROM task WHERE id = $1`
+
 )
