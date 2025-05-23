@@ -7,7 +7,7 @@ import (
 	"kanban/internal/utils"
 )
 
-const maxTasks int = 10
+const maxTasks int = 52
 
 var errForbidden error = errors.New("this is not your board")
 var errTaskNotFound error = errors.New("task not found")
