@@ -1,8 +1,9 @@
-package column
+package columnRepo
 
 import (
 	"database/sql"
 	"errors"
+	columnModel "kanban/internal/column/model"
 	"kanban/internal/postgres"
 	"kanban/internal/utils"
 )
@@ -14,8 +15,16 @@ var errColumnNotFound = errors.New("column not found")
 var errColumnLimitReached = errors.New("column limit reached")
 var errIncorrectPosition = errors.New("column position is greater than possible or not positive")
 
-func CreateColumn(db *sql.DB, column Column, userID string) error {
-	tx, err := db.Begin()
+type Repository struct {
+	db *sql.DB
+}
+
+func NewRepository(db *sql.DB) *Repository {
+	return &Repository{db: db}
+}
+
+func (r *Repository) Create(column columnModel.Column, userID string) error {
+	tx, err := r.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -60,16 +69,16 @@ func CreateColumn(db *sql.DB, column Column, userID string) error {
 	return tx.Commit()
 }
 
-func GetAllColumns(db *sql.DB, boardID, userID string) ([]Column, error) {
-	rows, err := db.Query(postgres.QueryGetAllColumns, boardID, userID)
+func (r *Repository) GetAll(boardID, userID string) ([]columnModel.Column, error) {
+	rows, err := r.db.Query(postgres.QueryGetAllColumns, boardID, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var columns []Column
+	var columns []columnModel.Column
 	for rows.Next() {
-		var column Column
+		var column columnModel.Column
 		if err := rows.Scan(
 			&column.ID,
 			&column.BoardID,
@@ -90,9 +99,9 @@ func GetAllColumns(db *sql.DB, boardID, userID string) ([]Column, error) {
 	return columns, nil
 }
 
-func GetColumn(db *sql.DB, id, userID string) (*Column, error) {
-	var column Column
-	err := db.QueryRow(postgres.QueryGetColumn, id, userID).Scan(
+func (r *Repository) Get(id, userID string) (*columnModel.Column, error) {
+	var column columnModel.Column
+	err := r.db.QueryRow(postgres.QueryGetColumn, id, userID).Scan(
 		&column.ID,
 		&column.BoardID,
 		&column.CreatedAt,
@@ -111,8 +120,8 @@ func GetColumn(db *sql.DB, id, userID string) (*Column, error) {
 	return &column, nil
 }
 
-func UpdateColumn(db *sql.DB, userID, columnID string, newName *string, newPos *int) error {
-	tx, err := db.Begin()
+func (r *Repository) Update(userID, columnID string, newName *string, newPos *int) error {
+	tx, err := r.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -168,8 +177,8 @@ func UpdateColumn(db *sql.DB, userID, columnID string, newName *string, newPos *
 	return tx.Commit()
 }
 
-func DeleteColumn(db *sql.DB, userID, columnID string) error {
-	tx, err := db.Begin()
+func (r *Repository) Delete(userID, columnID string) error {
+	tx, err := r.db.Begin()
 	if err != nil {
 		return err
 	}

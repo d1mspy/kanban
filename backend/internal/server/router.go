@@ -41,19 +41,8 @@ func (r *Server) NewAPI(db *sql.DB) {
 		ctx.JSON(http.StatusOK, gin.H{"user_id": userID})
 	})
 
-	board.Init(db, r.engine)
-
-	//protectedGroup.POST("/boards", board.CreateBoardHandler(db))
-	//protectedGroup.GET("/boards", board.GetAllBoardsHandler(db))
-	//protectedGroup.GET("/boards/:id", board.GetBoardHandler(db))
-	//protectedGroup.PUT("/boards/:id", board.UpdateBoardHandler(db))
-	//protectedGroup.DELETE("/boards/:id", board.DeleteBoardHandler(db))
-
-	protectedGroup.POST("/boards/:id/columns", column.CreateColumnHandler(db))
-	protectedGroup.GET("/boards/:id/columns", column.GetAllColumnsHandler(db))
-	protectedGroup.GET("/columns/:id", column.GetColumnHandler(db))
-	protectedGroup.PATCH("/columns/:id", column.UpdateColumnHandler(db))
-	protectedGroup.DELETE("/columns/:id", column.DeleteColumnHandler(db))
+	board.Init(db, r.engine, protectedGroup)
+	column.Init(db, r.engine, protectedGroup)
 
 	protectedGroup.POST("/columns/:id/tasks", task.CreateTaskHandler(db))
 	protectedGroup.GET("/columns/:id/tasks", task.GetAllTasksHandler(db))
