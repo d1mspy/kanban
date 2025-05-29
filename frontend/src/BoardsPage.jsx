@@ -242,48 +242,50 @@ export default function BoardsPage({ token, onLogout }) {
         />
         <button onClick={createColumn}>Добавить колонку</button>
       </div>
-      <DragDropContext onDragEnd={async ({ source, destination, draggableId, type }) => {
-        if (!destination || (source.droppableId === destination.droppableId && source.index === destination.index)) return;
+      <DragDropContext
+        onDragEnd={async ({ source, destination, draggableId, type }) => {
+          if (!destination || (source.droppableId === destination.droppableId && source.index === destination.index)) {
+            return;
+          }
 
-        if (type === 'COLUMN') {
-          const newColumns = Array.from(columns);
-          const [moved] = newColumns.splice(source.index, 1);
-          newColumns.splice(destination.index, 0, moved);
+          if (type === 'COLUMN') {
+            const newColumns = Array.from(columns);
+            const [moved] = newColumns.splice(source.index, 1);
+            newColumns.splice(destination.index, 0, moved);
 
-          setColumns(newColumns);
+            setColumns(newColumns);
 
-          await Promise.all(
-            newColumns.map((col, i) =>
-              fetch(`/api/columns/${col.id}`, {
-                method: 'PATCH',
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ position: i + 1 })
-              })
-            )
-          );
-        } else {
-          const fromCol = source.droppableId;
-          const toCol = destination.droppableId;
-          const task = tasks[fromCol].find(t => t.id === draggableId);
-          const patch = fromCol === toCol
-            ? { position: destination.index + 1 }
-            : { column_id: toCol, position: destination.index + 1 };
+            await fetch(`/api/columns/${moved.id}`, {
+              method: 'PATCH',
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ position: destination.index + 1 })
+            });
 
-          await fetch(`/api/tasks/${task.id}`, {
-            method: 'PATCH',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(patch)
-          });
+            fetchColumns(selectedBoard.id);
+          } else {
+            const fromCol = source.droppableId;
+            const toCol = destination.droppableId;
+            const task = tasks[fromCol].find(t => t.id === draggableId);
 
-          fetchColumns(selectedBoard.id);
-        }
-      }}>
+            const patch = fromCol === toCol
+              ? { position: destination.index + 1 }
+              : { column_id: toCol, position: destination.index + 1 };
+
+            await fetch(`/api/tasks/${task.id}`, {
+              method: 'PATCH',
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(patch)
+            });
+
+            fetchColumns(selectedBoard.id);
+          }
+        }}>
         <Droppable droppableId="columns" direction="horizontal" type="COLUMN">
           {(provided) => (
             <div
@@ -291,7 +293,7 @@ export default function BoardsPage({ token, onLogout }) {
               {...provided.droppableProps}
               style={{ display: 'flex', gap: '16px', marginTop: '16px' }}
             >
-              {columns.sort((a, b) => a.position - b.position).map((column, index) => (
+              {[...columns].sort((a, b) => a.position - b.position).map((column, index) => (
                 <Draggable key={column.id} draggableId={column.id} index={index}>
                   {(provided) => (
                     <div
