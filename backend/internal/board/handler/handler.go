@@ -1,21 +1,34 @@
-package board
+package boardHandler
 
 import (
-	"database/sql"
 	"kanban/internal/auth"
-	"kanban/internal/utils"
+	boardModel "kanban/internal/board/model"
+	boardService "kanban/internal/board/service"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-type boardRequest struct {
-	Name string `json:"name"`
+type Service interface {
+	CreateBoard(userID, name string) error
+	GetAllBoards(userID string) ([]boardModel.Board, error)
+	GetBoard(id, userID string) (boardModel.Board, error)
+	UpdateBoard(id, name, userID string) error
+	DeleteBoard(boardID, userID string) error
 }
 
-func CreateBoardHandler(db *sql.DB) gin.HandlerFunc {
+type Handler struct {
+	service *boardService.Service
+}
+
+func NewHandler(serv *boardService.Service) *Handler {
+	return &Handler{service: serv}
+}
+
+func (h *Handler) CreateBoardHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		var req boardRequest
+		var req boardModel.BoardRequest
 		if err := ctx.ShouldBindJSON(&req); err != nil {
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"detail": "Invalid request body",
@@ -31,13 +44,9 @@ func CreateBoardHandler(db *sql.DB) gin.HandlerFunc {
 			return
 		}
 
-		board := Board{
-			ID: utils.NewUUID(),
-			UserID: userID,
-			Name: req.Name,
-		}
-
-		if err := CreateBoard(db, board); err != nil {
+		err := h.service.CreateBoard(userID, req.Name)
+		if err != nil {
+			log.Printf("Failed create board: %w\n", err)
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"detail": "Failed to create board",
 			})
@@ -48,7 +57,7 @@ func CreateBoardHandler(db *sql.DB) gin.HandlerFunc {
 	}
 }
 
-func GetAllBoardsHandler(db *sql.DB) gin.HandlerFunc {
+func (h *Handler) GetAllBoardsHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		userID, ok := auth.GetUserID(ctx)
 		if !ok {
@@ -58,11 +67,11 @@ func GetAllBoardsHandler(db *sql.DB) gin.HandlerFunc {
 			return
 		}
 
-		boards, err := GetAllBoards(db, userID); 
-		
+		boards, err := h.service.GetAllBoards(userID)
 		if err != nil {
+			log.Printf("Failed to get boards: %w", err)
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"detail": "Failed to load all board data",
+				"detail": "Failed to get boards",
 			})
 			return
 		}
@@ -71,7 +80,7 @@ func GetAllBoardsHandler(db *sql.DB) gin.HandlerFunc {
 	}
 }
 
-func GetBoardHandler(db *sql.DB) gin.HandlerFunc {
+func (h *Handler) GetBoardHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		id := ctx.Param("id")
 
@@ -83,14 +92,9 @@ func GetBoardHandler(db *sql.DB) gin.HandlerFunc {
 			return
 		}
 
-		board, err := GetBoard(db, id, userID)
+		board, err := h.service.GetBoard(id, userID)
 		if err != nil {
-			if err == errBoardNotFound {
-				ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{
-					"detail": "Board not found",
-				})
-				return
-			}
+			log.Printf("Failed to get board: %w", err)
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"detail": "Failed to get board",
 			})
@@ -101,9 +105,9 @@ func GetBoardHandler(db *sql.DB) gin.HandlerFunc {
 	}
 }
 
-func UpdateBoardHandler(db *sql.DB) gin.HandlerFunc {
+func (h *Handler) UpdateBoardHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		var req boardRequest
+		var req boardModel.BoardRequest
 		if err := ctx.ShouldBindJSON(&req); err != nil {
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"detail": "Invalid request body",
@@ -121,13 +125,8 @@ func UpdateBoardHandler(db *sql.DB) gin.HandlerFunc {
 			return
 		}
 
-		board := Board{
-			ID: id,
-			Name: req.Name,
-			UserID: userID,
-		}
-
-		if err := UpdateBoard(db, board); err != nil {
+		if err := h.service.UpdateBoard(id, req.Name, userID); err != nil {
+			log.Printf("Failed to update board: %w", err)
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"detail": "Failed to update board",
 			})
@@ -138,7 +137,7 @@ func UpdateBoardHandler(db *sql.DB) gin.HandlerFunc {
 	}
 }
 
-func DeleteBoardHandler(db *sql.DB) gin.HandlerFunc {
+func (h *Handler) DeleteBoardHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		id := ctx.Param("id")
 
@@ -150,7 +149,8 @@ func DeleteBoardHandler(db *sql.DB) gin.HandlerFunc {
 			return
 		}
 
-		if err := DeleteBoard(db, id, userID); err != nil {
+		if err := h.service.DeleteBoard(id, userID); err != nil {
+			log.Printf("Failed to delete board: %w", err)
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"detail": "Failed to delete board",
 			})

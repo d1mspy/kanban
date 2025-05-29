@@ -8,12 +8,12 @@ import (
 )
 
 func main() {
-	time.Sleep(1*time.Second)
+	time.Sleep(1 * time.Second)
 
 	db := postgres.NewPostgres()
 	defer db.Close()
 
-	s := server.New(config.Load().Host, db)
-
+	s := server.New(config.Load().Host)
+	s.NewAPI(db)
 	s.Start()
 }

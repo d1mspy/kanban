@@ -1,4 +1,4 @@
-package board
+package boardModel
 
 import "time"
 
@@ -8,4 +8,8 @@ type Board struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Name      string    `json:"name"`
+}
+
+type BoardRequest struct {
+	Name string `json:"name"`
 }

@@ -12,58 +12,56 @@ import (
 )
 
 type Server struct {
-	host string
-	db *sql.DB
+	host   string
+	engine *gin.Engine
 }
 
-func New(host string, db *sql.DB) *Server {
+func New(host string) *Server {
 	s := &Server{
-		host: host,
-		db: db,	
+		host:   host,
+		engine: gin.New(),
 	}
 
 	return s
 }
 
-func (r *Server) newAPI() *gin.Engine {
-	engine := gin.New()
-
-	engine.GET("/health", func(ctx *gin.Context) {
+func (r *Server) NewAPI(db *sql.DB) {
+	r.engine.GET("/health", func(ctx *gin.Context) {
 		ctx.Status(http.StatusNoContent)
 	})
 
-	authGroup := engine.Group("/auth")
-	authGroup.POST("/register", auth.RegisterHandler(r.db))
-	authGroup.POST("/login", auth.LoginHandler(r.db))
+	authGroup := r.engine.Group("/auth")
+	authGroup.POST("/register", auth.RegisterHandler(db))
+	authGroup.POST("/login", auth.LoginHandler(db))
 
-	protectedGroup := engine.Group("/", auth.AuthMiddleware())
+	protectedGroup := r.engine.Group("/", auth.AuthMiddleware())
 
 	protectedGroup.GET("/me", func(ctx *gin.Context) {
 		userID, _ := auth.GetUserID(ctx)
 		ctx.JSON(http.StatusOK, gin.H{"user_id": userID})
 	})
 
-	protectedGroup.POST("/boards", board.CreateBoardHandler(r.db))
-	protectedGroup.GET("/boards", board.GetAllBoardsHandler(r.db))
-	protectedGroup.GET("/boards/:id", board.GetBoardHandler(r.db))
-	protectedGroup.PUT("/boards/:id", board.UpdateBoardHandler(r.db))
-	protectedGroup.DELETE("/boards/:id", board.DeleteBoardHandler(r.db))
+	board.Init(db, r.engine)
 
-	protectedGroup.POST("/boards/:id/columns", column.CreateColumnHandler(r.db))
-	protectedGroup.GET("/boards/:id/columns", column.GetAllColumnsHandler(r.db))
-	protectedGroup.GET("/columns/:id", column.GetColumnHandler(r.db))
-	protectedGroup.PATCH("/columns/:id", column.UpdateColumnHandler(r.db))
-	protectedGroup.DELETE("/columns/:id", column.DeleteColumnHandler(r.db))
+	//protectedGroup.POST("/boards", board.CreateBoardHandler(db))
+	//protectedGroup.GET("/boards", board.GetAllBoardsHandler(db))
+	//protectedGroup.GET("/boards/:id", board.GetBoardHandler(db))
+	//protectedGroup.PUT("/boards/:id", board.UpdateBoardHandler(db))
+	//protectedGroup.DELETE("/boards/:id", board.DeleteBoardHandler(db))
 
-	protectedGroup.POST("/columns/:id/tasks", task.CreateTaskHandler(r.db))
-	protectedGroup.GET("/columns/:id/tasks", task.GetAllTasksHandler(r.db))
-	protectedGroup.GET("/tasks/:id", task.GetTaskHandler(r.db))
-	protectedGroup.PATCH("/tasks/:id", task.UpdateTaskHandler(r.db))
-	protectedGroup.DELETE("/tasks/:id", task.DeleteTaskHandler(r.db))
+	protectedGroup.POST("/boards/:id/columns", column.CreateColumnHandler(db))
+	protectedGroup.GET("/boards/:id/columns", column.GetAllColumnsHandler(db))
+	protectedGroup.GET("/columns/:id", column.GetColumnHandler(db))
+	protectedGroup.PATCH("/columns/:id", column.UpdateColumnHandler(db))
+	protectedGroup.DELETE("/columns/:id", column.DeleteColumnHandler(db))
 
-	return engine
+	protectedGroup.POST("/columns/:id/tasks", task.CreateTaskHandler(db))
+	protectedGroup.GET("/columns/:id/tasks", task.GetAllTasksHandler(db))
+	protectedGroup.GET("/tasks/:id", task.GetTaskHandler(db))
+	protectedGroup.PATCH("/tasks/:id", task.UpdateTaskHandler(db))
+	protectedGroup.DELETE("/tasks/:id", task.DeleteTaskHandler(db))
 }
 
 func (r *Server) Start() {
-	r.newAPI().Run(r.host)
+	r.engine.Run(r.host)
 }
