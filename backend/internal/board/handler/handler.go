@@ -46,7 +46,7 @@ func (h *Handler) CreateBoardHandler() gin.HandlerFunc {
 
 		err := h.service.CreateBoard(userID, req.Name)
 		if err != nil {
-			log.Printf("Failed create board: %w\n", err)
+			log.Printf("Failed create board: %v\n", err)
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"detail": "Failed to create board",
 			})
@@ -69,7 +69,7 @@ func (h *Handler) GetAllBoardsHandler() gin.HandlerFunc {
 
 		boards, err := h.service.GetAllBoards(userID)
 		if err != nil {
-			log.Printf("Failed to get boards: %w", err)
+			log.Printf("Failed to get boards: %v", err)
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"detail": "Failed to get boards",
 			})
@@ -94,7 +94,7 @@ func (h *Handler) GetBoardHandler() gin.HandlerFunc {
 
 		board, err := h.service.GetBoard(id, userID)
 		if err != nil {
-			log.Printf("Failed to get board: %w", err)
+			log.Printf("Failed to get board: %v", err)
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"detail": "Failed to get board",
 			})
@@ -126,7 +126,7 @@ func (h *Handler) UpdateBoardHandler() gin.HandlerFunc {
 		}
 
 		if err := h.service.UpdateBoard(id, req.Name, userID); err != nil {
-			log.Printf("Failed to update board: %w", err)
+			log.Printf("Failed to update board: %v", err)
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"detail": "Failed to update board",
 			})
@@ -150,7 +150,7 @@ func (h *Handler) DeleteBoardHandler() gin.HandlerFunc {
 		}
 
 		if err := h.service.DeleteBoard(id, userID); err != nil {
-			log.Printf("Failed to delete board: %w", err)
+			log.Printf("Failed to delete board: %v", err)
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"detail": "Failed to delete board",
 			})
