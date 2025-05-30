@@ -1,9 +1,10 @@
-package task
+package taskRepo
 
 import (
 	"database/sql"
 	"errors"
 	"kanban/internal/postgres"
+	taskModel "kanban/internal/task/model"
 	"kanban/internal/utils"
 )
 
@@ -14,8 +15,16 @@ var errTaskNotFound error = errors.New("task not found")
 var errTaskLimitReached error = errors.New("task limit reached")
 var errIncorrectPosition error = errors.New("task position is greater than possible or not positive")
 
-func CreateTask(db *sql.DB, task Task, userID string) error {
-	tx, err := db.Begin()
+type Repository struct {
+	db *sql.DB
+}
+
+func NewRepository(db *sql.DB) *Repository {
+	return &Repository{db: db}
+}
+
+func (r *Repository) Create(task taskModel.Task, userID string) error {
+	tx, err := r.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -61,8 +70,8 @@ func CreateTask(db *sql.DB, task Task, userID string) error {
 	return tx.Commit()
 }
 
-func GetAllTasks(db *sql.DB, columnID, userID string) ([]Task, error) {
-	tx, err := db.Begin()
+func (r *Repository) GetAll(columnID, userID string) ([]taskModel.Task, error) {
+	tx, err := r.db.Begin()
 	if err != nil {
 		return nil, err
 	}
@@ -82,9 +91,9 @@ func GetAllTasks(db *sql.DB, columnID, userID string) ([]Task, error) {
 	}
 	defer rows.Close()
 
-	var tasks []Task
+	var tasks []taskModel.Task
 	for rows.Next() {
-		var task Task
+		var task taskModel.Task
 		if err = rows.Scan(
 			&task.ID,
 			&task.ColumnID,
@@ -112,8 +121,8 @@ func GetAllTasks(db *sql.DB, columnID, userID string) ([]Task, error) {
 	return tasks, nil
 }
 
-func GetTask(db *sql.DB, taskID, userID string) (*Task, error) {
-	tx, err := db.Begin()
+func (r *Repository) Get(taskID, userID string) (*taskModel.Task, error) {
+	tx, err := r.db.Begin()
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +141,7 @@ func GetTask(db *sql.DB, taskID, userID string) (*Task, error) {
 		return nil, errForbidden
 	}
 
-	var task Task
+	var task taskModel.Task
 	err = tx.QueryRow(postgres.QueryGetTask, taskID).Scan(
 		&task.ID,
 		&task.ColumnID,
@@ -159,8 +168,8 @@ func GetTask(db *sql.DB, taskID, userID string) (*Task, error) {
 	return &task, nil
 }
 
-func UpdateTaskContent(db *sql.DB, updatedTask updateTaskRequest, taskID, userID string) error {
-	tx, err := db.Begin()
+func (r *Repository) UpdateContent(updatedTask taskModel.UpdateTaskRequest, taskID, userID string) error {
+	tx, err := r.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -195,8 +204,8 @@ func UpdateTaskContent(db *sql.DB, updatedTask updateTaskRequest, taskID, userID
 	return tx.Commit()
 }
 
-func UpdateTaskColumn(db *sql.DB, updatedTask updateTaskRequest, taskID, userID string) error {
-	tx, err := db.Begin()
+func (r *Repository) UpdateColumn(updatedTask taskModel.UpdateTaskRequest, taskID, userID string) error {
+	tx, err := r.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -245,8 +254,8 @@ func UpdateTaskColumn(db *sql.DB, updatedTask updateTaskRequest, taskID, userID 
 	return tx.Commit()
 }
 
-func UpdateTaskPosition(db *sql.DB, updatedTask updateTaskRequest, taskID, userID string) error {
-	tx, err := db.Begin()
+func (r *Repository) UpdatePosition(updatedTask taskModel.UpdateTaskRequest, taskID, userID string) error {
+	tx, err := r.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -292,8 +301,8 @@ func UpdateTaskPosition(db *sql.DB, updatedTask updateTaskRequest, taskID, userI
 	return tx.Commit()
 }
 
-func DeleteTask(db *sql.DB, taskID, userID string) error {
-	tx, err := db.Begin()
+func (r *Repository) Delete(taskID, userID string) error {
+	tx, err := r.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -312,12 +321,12 @@ func DeleteTask(db *sql.DB, taskID, userID string) error {
 		return errForbidden
 	}
 
-	_, err = db.Exec(postgres.QueryMoveTaskForDelete, columnID, pos)
+	_, err = r.db.Exec(postgres.QueryMoveTaskForDelete, columnID, pos)
 	if err != nil {
 		return err
 	}
 
-	_, err = db.Exec(postgres.QueryDeleteTask, taskID)
+	_, err = r.db.Exec(postgres.QueryDeleteTask, taskID)
 	if err != nil {
 		return err
 	}

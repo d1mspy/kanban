@@ -43,12 +43,7 @@ func (r *Server) NewAPI(db *sql.DB) {
 
 	board.Init(db, r.engine, protectedGroup)
 	column.Init(db, r.engine, protectedGroup)
-
-	protectedGroup.POST("/columns/:id/tasks", task.CreateTaskHandler(db))
-	protectedGroup.GET("/columns/:id/tasks", task.GetAllTasksHandler(db))
-	protectedGroup.GET("/tasks/:id", task.GetTaskHandler(db))
-	protectedGroup.PATCH("/tasks/:id", task.UpdateTaskHandler(db))
-	protectedGroup.DELETE("/tasks/:id", task.DeleteTaskHandler(db))
+	task.Init(db, r.engine, protectedGroup)
 }
 
 func (r *Server) Start() {
