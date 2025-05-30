@@ -2,13 +2,14 @@
 
 ### Функционал
 - Создание, редактирование и удаление задач
-- Организация задач по колонкам (To Do, In Progress, Done)
-- Перемещение задач между колонками
+- Организация задач по колонкам
+- Перемещение задач между колонками, внутри колонки, перемещение самих колонок
 - Автоматическое добавление временных меток (создания и обновления задач)
 ### Технологии
 - **Backend:** Go Gin
 - **Frontend:** JS React
 - **База данных:** PostgreSQL
+- **DevOps:** Docker, Nginx
 
 ### REST API
 
@@ -296,48 +297,4 @@ TABLE task(
   done boolean NOT NULL DEFAULT false,
   deadline timestamptz
 );
-```
-
-### Структура проекта
-```
-/cmd
-  main.go  # точка входа
-
-/internal
- /config
-   config.go  # конфигурация, env
-
- /server
-   router.go  # конфигурация gin сервера, подключение всех роутов и middleware
-   middleware.go  # глобальный middleware
-
- /auth
-   handler.go  # ручки для авторизации
-   service.go  # валидация, хэширование пароля
-   middleware.go  # проверка авторизации
-   jwt.go  # генерация, валидация, работа с JWT
-   model.go  # модель для базы данных
-   repo.go  # работа с базой данных
-
- /board
-   handler.go  # ручки для досок
-   model.go   # модель для базы данных
-   repo.go  # работа с базой данных
-
- /column
-   handler.go  # ручки для колонок
-   model.go   # модель для базы данных
-   repo.go  # работа с базой данных
-
- /task
-   handler.go  # ручки для задач
-   model.go   # модель для базы данных
-   repo.go  # работа с базой данных
-
- /postgres
-   postgres.go  # подключение к бд и инициализация
-   queries.go  # сырые sql запросы
-
- /utils
-   utils.go  # утилиты, используемые в разных пакетах
 ```
