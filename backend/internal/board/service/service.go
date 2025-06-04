@@ -10,9 +10,9 @@ import (
 type Repository interface {
 	Create(board boardModel.Board) error
 	GetAll(userID string) ([]boardModel.Board, error)
-	Get(boardID, userID string) (*boardModel.Board, error)
+	Get(boardID string) (*boardModel.Board, error)
 	Update(board boardModel.Board) error
-	Delete(boardID, userID string) error
+	Delete(boardID string) error
 }
 
 type Service struct {
@@ -47,8 +47,8 @@ func (s *Service) GetAllBoards(userID string) ([]boardModel.Board, error) {
 	return boards, nil
 }
 
-func (s *Service) GetBoard(id, userID string) (*boardModel.Board, error) {
-	board, err := s.repo.Get(id, userID)
+func (s *Service) GetBoard(boardID string) (*boardModel.Board, error) {
+	board, err := s.repo.Get(boardID)
 	if err != nil {
 		return nil, fmt.Errorf("boardService.GetBoard: %w", err)
 	}
@@ -56,11 +56,10 @@ func (s *Service) GetBoard(id, userID string) (*boardModel.Board, error) {
 	return board, nil
 }
 
-func (s *Service) UpdateBoard(id, name, userID string) error {
+func (s *Service) UpdateBoard(boardID, name string) error {
 	board := boardModel.Board{
-		ID:     id,
+		ID:     boardID,
 		Name:   name,
-		UserID: userID,
 	}
 
 	if err := s.repo.Update(board); err != nil {
@@ -70,8 +69,8 @@ func (s *Service) UpdateBoard(id, name, userID string) error {
 	return nil
 }
 
-func (s *Service) DeleteBoard(boardID, userID string) error {
-	if err := s.repo.Delete(boardID, userID); err != nil {
+func (s *Service) DeleteBoard(boardID string) error {
+	if err := s.repo.Delete(boardID); err != nil {
 		return fmt.Errorf("boardService.DeleteBoard: %w", err)
 	}
 

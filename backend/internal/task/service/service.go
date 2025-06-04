@@ -9,10 +9,10 @@ import (
 
 type updateCase string
 const (
-	caseContent = "content"
-	caseColumn = "column"
-	casePosition = "position"
-	caseUndefined = "undefined"
+	caseContent   updateCase = "content"
+	caseColumn	  updateCase = "column"
+	casePosition  updateCase = "position"
+	caseUndefined updateCase = "undefined"
 )
 
 type Repository interface {

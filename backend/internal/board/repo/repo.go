@@ -64,9 +64,9 @@ func (r *Repository) GetAll(userID string) ([]boardModel.Board, error) {
 	return boards, nil
 }
 
-func (r *Repository) Get(boardID, userID string) (*boardModel.Board, error) {
+func (r *Repository) Get(boardID string) (*boardModel.Board, error) {
 	var board boardModel.Board
-	err := r.db.QueryRow(postgres.QueryGetBoard, boardID, userID).Scan(
+	err := r.db.QueryRow(postgres.QueryGetBoard, boardID).Scan(
 		&board.ID,
 		&board.UserID,
 		&board.CreatedAt,
@@ -90,13 +90,18 @@ func (r *Repository) Update(board boardModel.Board) error {
 		utils.GenerateTimestamp(), 
 		board.Name, 
 		board.ID, 
-		board.UserID,
 	)
 	
 	return err
 }
 
-func (r *Repository) Delete(boardID, userID string) error {
-	_, err := r.db.Exec(postgres.QueryDeleteBoard, boardID, userID)
+func (r *Repository) Delete(boardID string) error {
+	_, err := r.db.Exec(postgres.QueryDeleteBoard, boardID)
 	return err
+}
+
+func (r *Repository) GetUserByBoard(boardID string) (*string, error) {
+	var userID string
+	err := r.db.QueryRow(postgres.QueryGetUserByBoardID, boardID).Scan(&userID)
+	return &userID, err
 }

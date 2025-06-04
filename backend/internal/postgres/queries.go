@@ -1,6 +1,9 @@
 package postgres
 
 const (
+
+	// Creating tables
+
 	QueryCreateUserTable = `CREATE TABLE IF NOT EXISTS "user"(
 		id uuid PRIMARY KEY,
 		created_at timestamptz NOT NULL,
@@ -37,21 +40,27 @@ const (
 		deadline timestamptz
 	)`
 
+	// Auth queries
+
 	QueryCreateUser = `INSERT INTO "user" (id, username, hashed_password, created_at) VALUES ($1, $2, $3, $4)`
 
 	QueryGetUserByUsername = `SELECT id, username, hashed_password FROM "user" WHERE username=$1`
+
+	// Board Queries
 
 	QueryCreateBoard = `INSERT INTO board (id, user_id, created_at, updated_at, name) VALUES ($1, $2, $3, $4, $5)`
 
 	QueryGetAllBoards = `SELECT * FROM board WHERE user_id = $1 ORDER BY created_at`
 
-	QueryGetBoard = `SELECT * FROM board WHERE id = $1 AND user_id = $2`
+	QueryGetBoard = `SELECT * FROM board WHERE id = $1`
 
 	QueryUpdateBoard = `UPDATE board 
 		SET updated_at = $1, name = $2
-		WHERE id = $3 AND user_id = $4`
+		WHERE id = $3`
 
-	QueryDeleteBoard = `DELETE FROM board WHERE id = $1 AND user_id = $2`
+	QueryDeleteBoard = `DELETE FROM board WHERE id = $1`
+
+	// Column queries
 
 	QueryGetMaxColumnPosition = `SELECT COALESCE(MAX(position), 0) + 1 FROM "column" WHERE board_id = $1`
 
@@ -157,5 +166,7 @@ const (
 		WHERE id = $3`
 
 	QueryDeleteTask = `DELETE FROM task WHERE id = $1`
+
+	QueryGetUserByBoardID = `SELECT user_id FROM board WHERE id = $1`
 
 )
