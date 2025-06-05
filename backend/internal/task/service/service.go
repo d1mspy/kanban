@@ -3,7 +3,6 @@ package taskService
 import (
 	"fmt"
 	taskModel "kanban/internal/task/model"
-	taskRepo "kanban/internal/task/repo"
 	"reflect"
 )
 
@@ -16,31 +15,33 @@ const (
 )
 
 type Repository interface {
-	Create(task taskModel.Task, userID string) error
-	GetAll(columnID, userID string) ([]taskModel.Task, error)
-	Get(taskID, userID string) (*taskModel.Task, error)
-	UpdateContent(updatedTask taskModel.UpdateTaskRequest, taskID, userID string) error
-	UpdateColumn(updatedTask taskModel.UpdateTaskRequest, taskID, userID string) error
-	UpdatePosition(updatedTask taskModel.UpdateTaskRequest, taskID, userID string) error
-	Delete(taskID, userID string) error
+	Create(task taskModel.Task) error
+	GetAll(columnID string) ([]taskModel.Task, error)
+	Get(taskID string) (*taskModel.Task, error)
+	UpdateContent(updatedTask taskModel.UpdateTaskRequest, taskID string) error
+	UpdateColumn(updatedTask taskModel.UpdateTaskRequest, taskID string) error
+	UpdatePosition(updatedTask taskModel.UpdateTaskRequest, taskID string) error
+	Delete(taskID string) error
+	GetUserByColumn(columnID string) (*string, error)
+	GetUserByTask(taskID string) (*string, error)
 }
 
 type Service struct {
-	repo *taskRepo.Repository
+	repo Repository
 }
 
-func NewService(repo *taskRepo.Repository) *Service {
+func NewService(repo Repository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) CreateTask(columnID, name, description, userID string) error {
+func (s *Service) CreateTask(columnID, name, description string) error {
 	task := taskModel.Task{
 		ColumnID: columnID,
 		Name: name,
 		Description: description,
 	}
 
-	err := s.repo.Create(task, userID)
+	err := s.repo.Create(task)
 	if err != nil {
 		return fmt.Errorf("taskService.CreateTask: %w", err)
 	}
@@ -48,8 +49,8 @@ func (s *Service) CreateTask(columnID, name, description, userID string) error {
 	return nil
 }
 
-func (s *Service) GetAllTasks(columnID, userID string) ([]taskModel.Task, error) {
-	tasks, err := s.repo.GetAll(columnID, userID)
+func (s *Service) GetAllTasks(columnID string) ([]taskModel.Task, error) {
+	tasks, err := s.repo.GetAll(columnID)
 	if err != nil {
 		return nil, fmt.Errorf("taskService.GetAllTasks: %w", err)
 	}
@@ -57,8 +58,8 @@ func (s *Service) GetAllTasks(columnID, userID string) ([]taskModel.Task, error)
 	return tasks, nil
 }
 
-func (s *Service) GetTask(taskID, userID string) (*taskModel.Task, error) {
-	task, err := s.repo.Get(taskID, userID)
+func (s *Service) GetTask(taskID string) (*taskModel.Task, error) {
+	task, err := s.repo.Get(taskID)
 	if err != nil {
 		return nil, fmt.Errorf("taskService.GetTask: %w", err)
 	}
@@ -66,17 +67,17 @@ func (s *Service) GetTask(taskID, userID string) (*taskModel.Task, error) {
 	return task, nil
 }
 
-func (s *Service) UpdateTask(req taskModel.UpdateTaskRequest, taskID, userID string) error {
+func (s *Service) UpdateTask(req taskModel.UpdateTaskRequest, taskID string) error {
 	updCase := validateUpdateTaskRequest(req)
 
 	var err error
 	switch updCase {
 	case caseContent:
-		err = s.repo.UpdateContent(req, taskID, userID)
+		err = s.repo.UpdateContent(req, taskID)
 	case caseColumn:
-		err = s.repo.UpdateColumn(req, taskID, userID)
+		err = s.repo.UpdateColumn(req, taskID)
 	case casePosition:
-		err = s.repo.UpdatePosition(req, taskID, userID)
+		err = s.repo.UpdatePosition(req, taskID)
 	default:
 		return fmt.Errorf("taskService.UpdateTask: %w", err)
 	}
@@ -88,13 +89,22 @@ func (s *Service) UpdateTask(req taskModel.UpdateTaskRequest, taskID, userID str
 	return nil
 }
 
-func (s *Service) DeleteTask(taskID, userID string) error {
-	err := s.repo.Delete(taskID, userID)
+func (s *Service) DeleteTask(taskID string) error {
+	err := s.repo.Delete(taskID)
 	if err != nil {
 		return fmt.Errorf("taskService.DeleteTask: %w", err)
 	}
 
 	return nil
+}
+
+
+func (s *Service) GetUserByColumn(columnID string) (*string, error) {
+	return s.repo.GetUserByColumn(columnID)
+}
+
+func (s *Service) GetUserByTask(taskID string) (*string, error) {
+	return s.repo.GetUserByTask(taskID)
 }
 
 func validateUpdateTaskRequest(req taskModel.UpdateTaskRequest) updateCase {

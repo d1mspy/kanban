@@ -102,12 +102,6 @@ const (
 
 	// Task queries
 
-	QueryCheckBoardOwnershipForTask = `SELECT EXISTS (
-		SELECT 1 FROM "column"
-		JOIN board ON "column".board_id = board.id
-		WHERE "column".id = $1 AND board.user_id = $2
-	)`
-
 	QueryGetTasksCount = `SELECT COUNT(*) FROM task WHERE column_id = $1`
 
 	QueryGetMaxTaskPosition = `SELECT COALESCE(MAX(position), 0) + 1 FROM task WHERE column_id = $1`
@@ -117,8 +111,6 @@ const (
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
 	
 	QueryGetAllTasks = `SELECT * FROM task WHERE column_id = $1 ORDER BY position`
-
-	QueryGetColumnID = `SELECT column_id FROM task WHERE id = $1`
 
 	QueryGetTask = `SELECT * FROM task WHERE id = $1`
 
@@ -170,5 +162,11 @@ const (
 		FROM board
 		JOIN "column" ON "column".board_id = board.id
 		WHERE "column".id = $1`
+	
+	QueryGetUserByTaskID = `SELECT board.user_id
+		FROM task
+		JOIN "column" ON task.column_id = "column".id
+		JOIN board ON "column".board_id = board.id
+		WHERE task.id = $1`
 
 )

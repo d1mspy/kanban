@@ -3,26 +3,26 @@ package taskHandler
 import (
 	"kanban/internal/auth"
 	taskModel "kanban/internal/task/model"
-	taskService "kanban/internal/task/service"
 	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-type Service interface {
+type Proxy interface {
 	CreateTask(columnID, name, description, userID string) error
 	GetAllTasks(columnID, userID string) ([]taskModel.Task, error)
 	GetTask(taskID, userID string) (*taskModel.Task, error)
 	UpdateTask(req taskModel.UpdateTaskRequest, taskID, userID string) error
+	DeleteTask(taskID, userID string) error
 }
 
 type Handler struct {
-	service *taskService.Service
+	proxy Proxy
 }
 
-func NewHandler(service *taskService.Service) *Handler {
-	return &Handler{service: service}
+func NewHandler(proxy Proxy) *Handler {
+	return &Handler{proxy: proxy}
 }
 
 func (h *Handler) CreateTaskHandler() gin.HandlerFunc {
@@ -45,7 +45,7 @@ func (h *Handler) CreateTaskHandler() gin.HandlerFunc {
 
 		columnID := ctx.Param("id")
 
-		err := h.service.CreateTask(columnID, req.Name, req.Description, userID); 
+		err := h.proxy.CreateTask(columnID, req.Name, req.Description, userID); 
 		if err != nil {
 			log.Printf("Failed to create task: %v", err)
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
@@ -70,7 +70,7 @@ func (h *Handler) GetAllTasksHandler() gin.HandlerFunc {
 			return
 		}
 
-		tasks, err := h.service.GetAllTasks(columnID, userID)
+		tasks, err := h.proxy.GetAllTasks(columnID, userID)
 		if err != nil {
 			log.Printf("Failed to get all tasks: %v", err)
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
@@ -95,7 +95,7 @@ func (h *Handler) GetTaskHandler() gin.HandlerFunc {
 			return
 		}
 
-		task, err := h.service.GetTask(taskID, userID)
+		task, err := h.proxy.GetTask(taskID, userID)
 		if err != nil {
 			log.Printf("Failed to get task: %v", err)
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
@@ -128,7 +128,7 @@ func (h *Handler) UpdateTaskHandler() gin.HandlerFunc {
 			return
 		}
 
-		err := h.service.UpdateTask(req, taskID, userID)
+		err := h.proxy.UpdateTask(req, taskID, userID)
 		if err != nil {
 			log.Printf("Failed to update task: %v", err)
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
@@ -153,7 +153,7 @@ func (h *Handler) DeleteTaskHandler() gin.HandlerFunc {
 			return
 		}
 
-		err := h.service.DeleteTask(taskID, userID);
+		err := h.proxy.DeleteTask(taskID, userID);
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"detail": "Failed to delete task",

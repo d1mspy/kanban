@@ -10,7 +10,6 @@ import (
 
 const maxTasks int = 52
 
-var errForbidden error = errors.New("this is not your board")
 var errTaskNotFound error = errors.New("task not found")
 var errTaskLimitReached error = errors.New("task limit reached")
 var errIncorrectPosition error = errors.New("task position is greater than possible or not positive")
@@ -23,20 +22,12 @@ func NewRepository(db *sql.DB) *Repository {
 	return &Repository{db: db}
 }
 
-func (r *Repository) Create(task taskModel.Task, userID string) error {
+func (r *Repository) Create(task taskModel.Task) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
-
-	ok, err := checkOwnershipByColumn(tx, task.ColumnID, userID)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return errForbidden
-	}
 
 	var count int
 	err = tx.QueryRow(postgres.QueryGetTasksCount, task.ColumnID).Scan(&count)
@@ -70,20 +61,12 @@ func (r *Repository) Create(task taskModel.Task, userID string) error {
 	return tx.Commit()
 }
 
-func (r *Repository) GetAll(columnID, userID string) ([]taskModel.Task, error) {
+func (r *Repository) GetAll(columnID string) ([]taskModel.Task, error) {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
-
-	ok, err := checkOwnershipByColumn(tx, columnID, userID)
-	if err != nil {
-		return nil, err
-	}
-	if !ok {
-		return nil, errForbidden
-	}
 
 	rows, err := tx.Query(postgres.QueryGetAllTasks, columnID)
 	if err != nil {
@@ -121,25 +104,12 @@ func (r *Repository) GetAll(columnID, userID string) ([]taskModel.Task, error) {
 	return tasks, nil
 }
 
-func (r *Repository) Get(taskID, userID string) (*taskModel.Task, error) {
+func (r *Repository) Get(taskID string) (*taskModel.Task, error) {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
-
-	columnID, err := getColumnID(tx, taskID)
-	if err != nil {
-		return nil, err
-	}
-
-	ok, err := checkOwnershipByColumn(tx, columnID, userID)
-	if err != nil {
-		return nil, err
-	}
-	if !ok {
-		return nil, errForbidden
-	}
 
 	var task taskModel.Task
 	err = tx.QueryRow(postgres.QueryGetTask, taskID).Scan(
@@ -168,25 +138,12 @@ func (r *Repository) Get(taskID, userID string) (*taskModel.Task, error) {
 	return &task, nil
 }
 
-func (r *Repository) UpdateContent(updatedTask taskModel.UpdateTaskRequest, taskID, userID string) error {
+func (r *Repository) UpdateContent(updatedTask taskModel.UpdateTaskRequest, taskID string) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
-
-	columnID, err := getColumnID(tx, taskID)
-	if err != nil {
-		return err
-	}
-
-	ok, err := checkOwnershipByColumn(tx, columnID, userID)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return errForbidden
-	}
 
 	_, err = tx.Exec(
 		postgres.QueryUpdateTaskContent,
@@ -204,7 +161,7 @@ func (r *Repository) UpdateContent(updatedTask taskModel.UpdateTaskRequest, task
 	return tx.Commit()
 }
 
-func (r *Repository) UpdateColumn(updatedTask taskModel.UpdateTaskRequest, taskID, userID string) error {
+func (r *Repository) UpdateColumn(updatedTask taskModel.UpdateTaskRequest, taskID string) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
@@ -214,14 +171,6 @@ func (r *Repository) UpdateColumn(updatedTask taskModel.UpdateTaskRequest, taskI
 	columnID, oldPos, err := getColumnIDAndPosition(tx, taskID)
 	if err != nil {
 		return err
-	}
-
-	ok, err := checkOwnershipByColumn(tx, columnID, userID)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return errForbidden
 	}
 
 	err = checkPosition(tx, columnID, *updatedTask.Position)
@@ -254,7 +203,7 @@ func (r *Repository) UpdateColumn(updatedTask taskModel.UpdateTaskRequest, taskI
 	return tx.Commit()
 }
 
-func (r *Repository) UpdatePosition(updatedTask taskModel.UpdateTaskRequest, taskID, userID string) error {
+func (r *Repository) UpdatePosition(updatedTask taskModel.UpdateTaskRequest, taskID string) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
@@ -264,14 +213,6 @@ func (r *Repository) UpdatePosition(updatedTask taskModel.UpdateTaskRequest, tas
 	columnID, oldPos, err := getColumnIDAndPosition(tx, taskID)
 	if err != nil {
 		return err
-	}
-
-	ok, err := checkOwnershipByColumn(tx, columnID, userID)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return errForbidden
 	}
 
 	err = checkPosition(tx, columnID, *updatedTask.Position + 1)
@@ -301,7 +242,7 @@ func (r *Repository) UpdatePosition(updatedTask taskModel.UpdateTaskRequest, tas
 	return tx.Commit()
 }
 
-func (r *Repository) Delete(taskID, userID string) error {
+func (r *Repository) Delete(taskID string) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
@@ -311,14 +252,6 @@ func (r *Repository) Delete(taskID, userID string) error {
 	columnID, pos, err := getColumnIDAndPosition(tx, taskID)
 	if err != nil {
 		return err
-	}
-
-	ok, err := checkOwnershipByColumn(tx, columnID, userID)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return errForbidden
 	}
 
 	_, err = r.db.Exec(postgres.QueryMoveTaskForDelete, columnID, pos)
@@ -334,19 +267,16 @@ func (r *Repository) Delete(taskID, userID string) error {
 	return tx.Commit()
 }
 
-func checkOwnershipByColumn(tx *sql.Tx, columnID, userID string) (bool, error) {
-	var ok bool
-	err := tx.QueryRow(postgres.QueryCheckBoardOwnershipForTask, columnID, userID).Scan(&ok)
-	return ok, err
+func (r *Repository) GetUserByColumn(columnID string) (*string, error) {
+	var userID string
+	err := r.db.QueryRow(postgres.QueryGetUserByColumnID, columnID).Scan(&userID)
+	return &userID, err
 }
 
-func getColumnID(tx *sql.Tx, taskID string) (string, error) {
-	var columnID string
-	err := tx.QueryRow(postgres.QueryGetColumnID, taskID).Scan(&columnID)
-	if errors.Is(err, sql.ErrNoRows) {
-		return "", errTaskNotFound
-	}
-	return columnID, err
+func (r *Repository) GetUserByTask(taskID string) (*string, error) {
+	var userID string
+	err := r.db.QueryRow(postgres.QueryGetUserByTaskID, taskID).Scan(&userID)
+	return &userID, err
 }
 
 func getColumnIDAndPosition(tx *sql.Tx, taskID string) (string, int, error) {

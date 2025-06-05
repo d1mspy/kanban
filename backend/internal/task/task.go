@@ -3,6 +3,7 @@ package task
 import (
 	"database/sql"
 	taskHandler "kanban/internal/task/handler"
+	taskProxy "kanban/internal/task/proxy"
 	taskRepo "kanban/internal/task/repo"
 	taskService "kanban/internal/task/service"
 
@@ -12,7 +13,8 @@ import (
 func Init(db *sql.DB, r *gin.Engine, grp *gin.RouterGroup) {
 	repo := taskRepo.NewRepository(db)
 	serv := taskService.NewService(repo)
-	handl := taskHandler.NewHandler(serv)
+	proxy := taskProxy.NewProxy(serv)
+	handl := taskHandler.NewHandler(proxy)
 
 	grp.POST("/columns/:id/tasks", handl.CreateTaskHandler())
 	grp.GET("/columns/:id/tasks", handl.GetAllTasksHandler())
