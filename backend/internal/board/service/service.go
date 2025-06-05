@@ -3,7 +3,6 @@ package boardService
 import (
 	"fmt"
 	boardModel "kanban/internal/board/model"
-	boardRepo "kanban/internal/board/repo"
 	"kanban/internal/utils"
 )
 
@@ -13,13 +12,14 @@ type Repository interface {
 	Get(boardID string) (*boardModel.Board, error)
 	Update(board boardModel.Board) error
 	Delete(boardID string) error
+	GetUserByBoard(boardID string) (*string, error)
 }
 
 type Service struct {
-	repo *boardRepo.Repository
+	repo Repository
 }
 
-func NewService(repo *boardRepo.Repository) *Service {
+func NewService(repo Repository) *Service {
 	return &Service{repo: repo}
 }
 

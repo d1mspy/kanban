@@ -3,7 +3,6 @@ package columnHandler
 import (
 	"kanban/internal/auth"
 	columnModel "kanban/internal/column/model"
-	columnProxy "kanban/internal/column/proxy"
 	"log"
 	"net/http"
 
@@ -19,10 +18,10 @@ type Proxy interface {
 }
 
 type Handler struct {
-	proxy *columnProxy.Proxy
+	proxy Proxy
 }
 
-func NewHandler(serv *columnProxy.Proxy) *Handler {
+func NewHandler(serv Proxy) *Handler {
 	return &Handler{proxy: serv}
 }
 

@@ -4,14 +4,13 @@ import (
 	"errors"
 	"fmt"
 	columnModel "kanban/internal/column/model"
-	columnService "kanban/internal/column/service"
 )
 
 var errForbidden = errors.New("this is not your board")
 
 type Service interface {
 	CreateColumn(boardID, name string) error
-	GetAllColumns(boardID string)
+	GetAllColumns(boardID string) ([]columnModel.Column, error)
 	GetColumn(boardID string) (*columnModel.Column, error)
 	UpdateColumn(columnID string, newName *string, newPos *int) error
 	DeleteColumn(columnID string) error
@@ -20,10 +19,10 @@ type Service interface {
 }
 
 type Proxy struct {
-	service *columnService.Service
+	service Service
 }
 
-func NewProxy(service *columnService.Service) *Proxy {
+func NewProxy(service Service) *Proxy {
 	return &Proxy{service: service}
 }
 

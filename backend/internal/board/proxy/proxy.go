@@ -3,23 +3,22 @@ package boardProxy
 import (
 	"fmt"
 	boardModel "kanban/internal/board/model"
-	boardService "kanban/internal/board/service"
 )
 
 type Service interface {
 	CreateBoard(userID, name string) error
 	GetAllBoards(userID string) ([]boardModel.Board, error)
-	GetBoard(boardID string) (boardModel.Board, error)
+	GetBoard(boardID string) (*boardModel.Board, error)
 	UpdateBoard(boardID, name string) error
 	DeleteBoard(boardID string) error
 	GetUserByBoard(boardID string) (*string, error)
 }
 
 type Proxy struct {
-	service *boardService.Service
+	service Service
 }
 
-func NewProxy(service *boardService.Service) *Proxy {
+func NewProxy(service Service) *Proxy {
 	return &Proxy{service: service}
 }
 

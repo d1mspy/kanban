@@ -3,7 +3,6 @@ package columnService
 import (
 	"fmt"
 	columnModel "kanban/internal/column/model"
-	columnRepo "kanban/internal/column/repo"
 	"kanban/internal/utils"
 )
 
@@ -13,13 +12,15 @@ type Repository interface {
 	Get(columnID string) (*columnModel.Column, error)
 	Update(columnID string, newName *string, newPos *int) error
 	Delete(columnID string) error
+	GetUserByBoard(boardID string) (*string, error)
+	GetUserByColumn(columnID string) (*string, error)
 }
 
 type Service struct {
-	repo *columnRepo.Repository
+	repo Repository
 }
 
-func NewService(repo *columnRepo.Repository) *Service {
+func NewService(repo Repository) *Service {
 	return &Service{repo: repo}
 }
 

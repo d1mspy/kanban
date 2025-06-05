@@ -3,7 +3,6 @@ package boardHandler
 import (
 	"kanban/internal/auth"
 	boardModel "kanban/internal/board/model"
-	boardProxy "kanban/internal/board/proxy"
 	"log"
 	"net/http"
 
@@ -19,10 +18,10 @@ type Proxy interface {
 }
 
 type Handler struct {
-	proxy *boardProxy.Proxy
+	proxy Proxy
 }
 
-func NewHandler(proxy *boardProxy.Proxy) *Handler {
+func NewHandler(proxy Proxy) *Handler {
 	return &Handler{proxy: proxy}
 }
 
