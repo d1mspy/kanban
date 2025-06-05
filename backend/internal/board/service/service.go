@@ -76,3 +76,7 @@ func (s *Service) DeleteBoard(boardID string) error {
 
 	return nil
 }
+
+func (s *Service) GetUserByBoard(boardID string) (*string, error) {
+	return s.repo.GetUserByBoard(boardID)
+}

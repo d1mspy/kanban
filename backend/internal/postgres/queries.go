@@ -64,25 +64,18 @@ const (
 
 	QueryGetMaxColumnPosition = `SELECT COALESCE(MAX(position), 0) + 1 FROM "column" WHERE board_id = $1`
 
-	QueryCheckBoardOwnershipForColumn = `SELECT EXISTS (
-		SELECT 1 FROM board WHERE id = $1 AND user_id = $2
-	)`
-
 	QueryGetColumnsCount = `SELECT COUNT(*) FROM "column" WHERE board_id = $1`
 
 	QueryCreateColumn = `INSERT INTO "column" 
 		(id, board_id, created_at, updated_at, name, position) 
 		VALUES ($1, $2, $3, $4, $5, $6)`
 
-	QueryGetColumn = `SELECT "column".* FROM "column"
-		JOIN board ON "column".board_id = board.id
-		WHERE "column".id = $1 AND board.user_id = $2`
+	QueryGetColumn = `SELECT * FROM "column"
+		WHERE "column".id = $1`
 
-	QueryGetAllColumns = `SELECT "column".* FROM "column"
-		JOIN board ON "column".board_id = board.id
-		WHERE "column".board_id = $1
-		AND board.user_id = $2
-		ORDER BY "column".position`
+	QueryGetAllColumns = `SELECT * FROM "column"
+		WHERE board_id = $1
+		ORDER BY position`
 	
 	QueryDeleteColumn = `DELETE FROM "column" WHERE id = $1`
 	
@@ -106,6 +99,8 @@ const (
 			position = COALESCE($2, position),
 			updated_at = $3
 		WHERE id = $4`
+
+	// Task queries
 
 	QueryCheckBoardOwnershipForTask = `SELECT EXISTS (
 		SELECT 1 FROM "column"
@@ -167,6 +162,13 @@ const (
 
 	QueryDeleteTask = `DELETE FROM task WHERE id = $1`
 
+	// Queries for checking ownership
+
 	QueryGetUserByBoardID = `SELECT user_id FROM board WHERE id = $1`
+
+	QueryGetUserByColumnID = `SELECT board.user_id
+		FROM board
+		JOIN "column" ON "column".board_id = board.id
+		WHERE "column".id = $1`
 
 )

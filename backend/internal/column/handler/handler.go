@@ -3,27 +3,27 @@ package columnHandler
 import (
 	"kanban/internal/auth"
 	columnModel "kanban/internal/column/model"
-	columnService "kanban/internal/column/service"
+	columnProxy "kanban/internal/column/proxy"
 	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-type Service interface {
+type Proxy interface {
 	CreateColumn(boardID, name, userID string) error
 	GetAllColumns(boardID, userID string) ([]columnModel.Column, error)
-	GetColumn(id, userID string) (*columnModel.Column, error)
-	UpdateColumn(userID, columnID string, newName *string, newPos *int) error
-	DeleteColumn(userID, columnID string) error
+	GetColumn(columnID, userID string) (*columnModel.Column, error)
+	UpdateColumn(columnID, userID string, newName *string, newPos *int) error
+	DeleteColumn(columnID, userID string) error
 }
 
 type Handler struct {
-	service *columnService.Service
+	proxy *columnProxy.Proxy
 }
 
-func NewHandler(serv *columnService.Service) *Handler {
-	return &Handler{service: serv}
+func NewHandler(serv *columnProxy.Proxy) *Handler {
+	return &Handler{proxy: serv}
 }
 
 func (h *Handler) CreateColumnHandler() gin.HandlerFunc {
@@ -46,7 +46,7 @@ func (h *Handler) CreateColumnHandler() gin.HandlerFunc {
 
 		boardID := ctx.Param("id")
 
-		err := h.service.CreateColumn(boardID, *req.Name, userID);
+		err := h.proxy.CreateColumn(boardID, *req.Name, userID);
 		if err != nil {
 			log.Printf("Failed to create column: %v", err)
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
@@ -71,7 +71,7 @@ func (h *Handler) GetAllColumnsHandler() gin.HandlerFunc {
 			return
 		}
 
-		columns, err := h.service.GetAllColumns(boardID, userID)
+		columns, err := h.proxy.GetAllColumns(boardID, userID)
 		if err != nil {
 			log.Printf("Failed to get columns: %v", err)
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
@@ -96,7 +96,7 @@ func (h *Handler) GetColumnHandler() gin.HandlerFunc {
 			return
 		}
 
-		column, err := h.service.GetColumn(id, userID)
+		column, err := h.proxy.GetColumn(id, userID)
 		if err != nil {
 			log.Printf("Failed to get column: %v", err)
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
@@ -129,7 +129,7 @@ func (h *Handler) UpdateColumnHandler() gin.HandlerFunc {
 			return
 		}
 
-		err := h.service.UpdateColumn(userID, id, req.Name, req.Position);
+		err := h.proxy.UpdateColumn(id, userID, req.Name, req.Position);
 		if err != nil {
 			log.Printf("Failed to update column: %v", err)
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
@@ -154,7 +154,7 @@ func (h *Handler) DeleteColumnHandler() gin.HandlerFunc {
 			return
 		}
 
-		err := h.service.DeleteColumn(userID, id);
+		err := h.proxy.DeleteColumn(id, userID);
 		if err != nil {
 			log.Printf("Failed to delete column: %v", err)
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{

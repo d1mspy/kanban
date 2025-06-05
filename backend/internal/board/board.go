@@ -13,7 +13,7 @@ import (
 func Init(db *sql.DB, r *gin.Engine, grp *gin.RouterGroup) {
 	repo := boardRepo.NewRepository(db)
 	serv := boardService.NewService(repo)
-	proxy := boardProxy.NewProxy(serv, repo)
+	proxy := boardProxy.NewProxy(serv)
 	handl := boardHandler.NewHandler(proxy)
 
 	grp.POST("/boards", handl.CreateBoardHandler())

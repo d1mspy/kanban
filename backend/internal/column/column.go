@@ -3,6 +3,7 @@ package column
 import (
 	"database/sql"
 	columnHandler "kanban/internal/column/handler"
+	columnProxy "kanban/internal/column/proxy"
 	columnRepo "kanban/internal/column/repo"
 	columnService "kanban/internal/column/service"
 
@@ -12,7 +13,8 @@ import (
 func Init(db *sql.DB, r *gin.Engine, grp *gin.RouterGroup) {
 	repo := columnRepo.NewRepository(db)
 	serv := columnService.NewService(repo)
-	handl := columnHandler.NewHandler(serv)
+	proxy := columnProxy.NewProxy(serv)
+	handl := columnHandler.NewHandler(proxy)
 
 	grp.POST("/boards/:id/columns", handl.CreateColumnHandler())
 	grp.GET("/boards/:id/columns", handl.GetAllColumnsHandler())

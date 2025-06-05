@@ -3,7 +3,6 @@ package boardProxy
 import (
 	"fmt"
 	boardModel "kanban/internal/board/model"
-	boardRepo "kanban/internal/board/repo"
 	boardService "kanban/internal/board/service"
 )
 
@@ -13,19 +12,15 @@ type Service interface {
 	GetBoard(boardID string) (boardModel.Board, error)
 	UpdateBoard(boardID, name string) error
 	DeleteBoard(boardID string) error
-}
-
-type Repository interface {
 	GetUserByBoard(boardID string) (*string, error)
 }
 
 type Proxy struct {
 	service *boardService.Service
-	repo    *boardRepo.Repository
 }
 
-func NewProxy(service *boardService.Service, repo *boardRepo.Repository) *Proxy {
-	return &Proxy{service: service, repo: repo}
+func NewProxy(service *boardService.Service) *Proxy {
+	return &Proxy{service: service}
 }
 
 func (p *Proxy) CreateBoard(userID, name string) error {
@@ -76,7 +71,7 @@ func (p *Proxy) DeleteBoard(boardID, userID string) error {
 }
 
 func (p *Proxy) checkBoardOwnership(boardID, userID string) (bool, error) {
-	realUserID, err := p.repo.GetUserByBoard(boardID)
+	realUserID, err := p.service.GetUserByBoard(boardID)
 	if err != nil {
 		return false, fmt.Errorf("boardProxy.checkBoardOwnership: %w", err)
 	}

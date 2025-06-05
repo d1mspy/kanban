@@ -10,7 +10,6 @@ import (
 
 const maxColumns int = 42
 
-var errForbidden = errors.New("this is not your board")
 var errColumnNotFound = errors.New("column not found")
 var errColumnLimitReached = errors.New("column limit reached")
 var errIncorrectPosition = errors.New("column position is greater than possible or not positive")
@@ -23,21 +22,12 @@ func NewRepository(db *sql.DB) *Repository {
 	return &Repository{db: db}
 }
 
-func (r *Repository) Create(column columnModel.Column, userID string) error {
+func (r *Repository) Create(column columnModel.Column) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
-
-	var exists bool
-	err = tx.QueryRow(postgres.QueryCheckBoardOwnershipForColumn, column.BoardID, userID).Scan(&exists)
-	if err != nil {
-		return err
-	}
-	if !exists {
-		return errForbidden
-	}
 
 	var count int
 	err = tx.QueryRow(postgres.QueryGetColumnsCount, column.BoardID).Scan(&count)
@@ -69,8 +59,8 @@ func (r *Repository) Create(column columnModel.Column, userID string) error {
 	return tx.Commit()
 }
 
-func (r *Repository) GetAll(boardID, userID string) ([]columnModel.Column, error) {
-	rows, err := r.db.Query(postgres.QueryGetAllColumns, boardID, userID)
+func (r *Repository) GetAll(boardID string) ([]columnModel.Column, error) {
+	rows, err := r.db.Query(postgres.QueryGetAllColumns, boardID)
 	if err != nil {
 		return nil, err
 	}
@@ -99,9 +89,9 @@ func (r *Repository) GetAll(boardID, userID string) ([]columnModel.Column, error
 	return columns, nil
 }
 
-func (r *Repository) Get(id, userID string) (*columnModel.Column, error) {
+func (r *Repository) Get(columnID string) (*columnModel.Column, error) {
 	var column columnModel.Column
-	err := r.db.QueryRow(postgres.QueryGetColumn, id, userID).Scan(
+	err := r.db.QueryRow(postgres.QueryGetColumn, columnID).Scan(
 		&column.ID,
 		&column.BoardID,
 		&column.CreatedAt,
@@ -120,7 +110,7 @@ func (r *Repository) Get(id, userID string) (*columnModel.Column, error) {
 	return &column, nil
 }
 
-func (r *Repository) Update(userID, columnID string, newName *string, newPos *int) error {
+func (r *Repository) Update(columnID string, newName *string, newPos *int) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
@@ -137,15 +127,6 @@ func (r *Repository) Update(userID, columnID string, newName *string, newPos *in
 		return err
 	}
 
-	var ok bool
-	err = tx.QueryRow(postgres.QueryCheckBoardOwnershipForColumn, boardID, userID).Scan(&ok)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return errForbidden
-	}
-
 	var maxPos int
 	if newPos != nil {
 		err = tx.QueryRow(postgres.QueryGetMaxColumnPosition, boardID).Scan(&maxPos)
@@ -157,7 +138,6 @@ func (r *Repository) Update(userID, columnID string, newName *string, newPos *in
 		}
 	}
 	
-
 	if newPos != nil && *newPos != oldPos {
 		if *newPos > oldPos {
 			_, err = tx.Exec(postgres.QueryMoveColumnsLeft, boardID, oldPos, *newPos)
@@ -177,7 +157,7 @@ func (r *Repository) Update(userID, columnID string, newName *string, newPos *in
 	return tx.Commit()
 }
 
-func (r *Repository) Delete(userID, columnID string) error {
+func (r *Repository) Delete(columnID string) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
@@ -194,15 +174,6 @@ func (r *Repository) Delete(userID, columnID string) error {
 		return err
 	}
 
-	var ok bool
-	err = tx.QueryRow(postgres.QueryCheckBoardOwnershipForColumn, boardID, userID).Scan(&ok)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return errForbidden
-	}
-
 	_, err = tx.Exec(postgres.QueryDeleteColumn, columnID)
 	if err != nil {
 		return err
@@ -214,4 +185,16 @@ func (r *Repository) Delete(userID, columnID string) error {
 	}
 
 	return tx.Commit()
+}
+
+func (r *Repository) GetUserByBoard(boardID string) (*string, error) {
+	var userID string
+	err := r.db.QueryRow(postgres.QueryGetUserByBoardID, boardID).Scan(&userID)
+	return &userID, err
+}
+
+func (r *Repository) GetUserByColumn(columnID string) (*string, error) {
+	var userID string
+	err := r.db.QueryRow(postgres.QueryGetUserByColumnID, columnID).Scan(&userID)
+	return &userID, err
 }
