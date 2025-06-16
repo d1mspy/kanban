@@ -1,7 +1,7 @@
 package taskHandler
 
 import (
-	"kanban/internal/auth"
+	authMiddleware "kanban/internal/auth/middleware"
 	taskModel "kanban/internal/task/model"
 	"log"
 	"net/http"
@@ -35,7 +35,7 @@ func (h *Handler) CreateTaskHandler() gin.HandlerFunc {
 			return
 		}
 
-		userID, ok := auth.GetUserID(ctx)
+		userID, ok := authMiddleware.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",
@@ -62,7 +62,7 @@ func (h *Handler) GetAllTasksHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		columnID := ctx.Param("id")
 
-		userID, ok := auth.GetUserID(ctx)
+		userID, ok := authMiddleware.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",
@@ -87,7 +87,7 @@ func (h *Handler) GetTaskHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		taskID := ctx.Param("id")
 
-		userID, ok := auth.GetUserID(ctx)
+		userID, ok := authMiddleware.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",
@@ -120,7 +120,7 @@ func (h *Handler) UpdateTaskHandler() gin.HandlerFunc {
 
 		taskID := ctx.Param("id")
 
-		userID, ok := auth.GetUserID(ctx)
+		userID, ok := authMiddleware.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",
@@ -145,7 +145,7 @@ func (h *Handler) DeleteTaskHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		taskID := ctx.Param("id")
 
-		userID, ok := auth.GetUserID(ctx)
+		userID, ok := authMiddleware.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",

@@ -10,16 +10,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Init(db *sql.DB, r *gin.Engine, grp *gin.RouterGroup) {
+func Init(db *sql.DB, grp *gin.RouterGroup) {
 	repo := boardRepo.NewRepository(db)
-	serv := boardService.NewService(repo)
-	proxy := boardProxy.NewProxy(serv)
-	handl := boardHandler.NewHandler(proxy)
+	service := boardService.NewService(repo)
+	proxy := boardProxy.NewProxy(service)
+	handler := boardHandler.NewHandler(proxy)
 
-	grp.POST("/boards", handl.CreateBoardHandler())
-	grp.GET("/boards", handl.GetAllBoardsHandler())
-	grp.GET("/boards/:id", handl.GetBoardHandler())
-	grp.PUT("/boards/:id", handl.UpdateBoardHandler())
-	grp.DELETE("/boards/:id", handl.DeleteBoardHandler())
+	grp.POST("/boards", handler.CreateBoardHandler())
+	grp.GET("/boards", handler.GetAllBoardsHandler())
+	grp.GET("/boards/:id", handler.GetBoardHandler())
+	grp.PUT("/boards/:id", handler.UpdateBoardHandler())
+	grp.DELETE("/boards/:id", handler.DeleteBoardHandler())
 
 }

@@ -10,15 +10,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Init(db *sql.DB, r *gin.Engine, grp *gin.RouterGroup) {
+func Init(db *sql.DB, grp *gin.RouterGroup) {
 	repo := taskRepo.NewRepository(db)
-	serv := taskService.NewService(repo)
-	proxy := taskProxy.NewProxy(serv)
-	handl := taskHandler.NewHandler(proxy)
+	service := taskService.NewService(repo)
+	proxy := taskProxy.NewProxy(service)
+	handler := taskHandler.NewHandler(proxy)
 
-	grp.POST("/columns/:id/tasks", handl.CreateTaskHandler())
-	grp.GET("/columns/:id/tasks", handl.GetAllTasksHandler())
-	grp.GET("/tasks/:id", handl.GetTaskHandler())
-	grp.PATCH("/tasks/:id", handl.UpdateTaskHandler())
-	grp.DELETE("/tasks/:id", handl.DeleteTaskHandler())
+	grp.POST("/columns/:id/tasks", handler.CreateTaskHandler())
+	grp.GET("/columns/:id/tasks", handler.GetAllTasksHandler())
+	grp.GET("/tasks/:id", handler.GetTaskHandler())
+	grp.PATCH("/tasks/:id", handler.UpdateTaskHandler())
+	grp.DELETE("/tasks/:id", handler.DeleteTaskHandler())
 }

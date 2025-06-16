@@ -3,10 +3,10 @@ package server
 import (
 	"database/sql"
 	"kanban/internal/auth"
+	authMiddleware "kanban/internal/auth/middleware"
 	"kanban/internal/board"
 	"kanban/internal/column"
 	"kanban/internal/task"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,24 +26,14 @@ func New(host string) *Server {
 }
 
 func (r *Server) NewAPI(db *sql.DB) {
-	r.engine.GET("/health", func(ctx *gin.Context) {
-		ctx.Status(http.StatusNoContent)
-	})
-
 	authGroup := r.engine.Group("/auth")
-	authGroup.POST("/register", auth.RegisterHandler(db))
-	authGroup.POST("/login", auth.LoginHandler(db))
+	protectedGroup := r.engine.Group("/", authMiddleware.Middleware())
 
-	protectedGroup := r.engine.Group("/", auth.AuthMiddleware())
+	auth.Init(db, authGroup)
 
-	protectedGroup.GET("/me", func(ctx *gin.Context) {
-		userID, _ := auth.GetUserID(ctx)
-		ctx.JSON(http.StatusOK, gin.H{"user_id": userID})
-	})
-
-	board.Init(db, r.engine, protectedGroup)
-	column.Init(db, r.engine, protectedGroup)
-	task.Init(db, r.engine, protectedGroup)
+	board.Init(db, protectedGroup)
+	column.Init(db, protectedGroup)
+	task.Init(db, protectedGroup)
 }
 
 func (r *Server) Start() {

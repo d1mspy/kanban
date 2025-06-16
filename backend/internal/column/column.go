@@ -10,15 +10,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Init(db *sql.DB, r *gin.Engine, grp *gin.RouterGroup) {
+func Init(db *sql.DB, grp *gin.RouterGroup) {
 	repo := columnRepo.NewRepository(db)
-	serv := columnService.NewService(repo)
-	proxy := columnProxy.NewProxy(serv)
-	handl := columnHandler.NewHandler(proxy)
+	service := columnService.NewService(repo)
+	proxy := columnProxy.NewProxy(service)
+	handler := columnHandler.NewHandler(proxy)
 
-	grp.POST("/boards/:id/columns", handl.CreateColumnHandler())
-	grp.GET("/boards/:id/columns", handl.GetAllColumnsHandler())
-	grp.GET("/columns/:id", handl.GetColumnHandler())
-	grp.PATCH("/columns/:id", handl.UpdateColumnHandler())
-	grp.DELETE("/columns/:id", handl.DeleteColumnHandler())
+	grp.POST("/boards/:id/columns", handler.CreateColumnHandler())
+	grp.GET("/boards/:id/columns", handler.GetAllColumnsHandler())
+	grp.GET("/columns/:id", handler.GetColumnHandler())
+	grp.PATCH("/columns/:id", handler.UpdateColumnHandler())
+	grp.DELETE("/columns/:id", handler.DeleteColumnHandler())
 }

@@ -1,7 +1,7 @@
 package columnHandler
 
 import (
-	"kanban/internal/auth"
+	authMiddleware "kanban/internal/auth/middleware"
 	columnModel "kanban/internal/column/model"
 	"log"
 	"net/http"
@@ -35,7 +35,7 @@ func (h *Handler) CreateColumnHandler() gin.HandlerFunc {
 			return
 		}
 
-		userID, ok := auth.GetUserID(ctx)
+		userID, ok := authMiddleware.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",
@@ -62,7 +62,7 @@ func (h *Handler) GetAllColumnsHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		boardID := ctx.Param("id")
 
-		userID, ok := auth.GetUserID(ctx)
+		userID, ok := authMiddleware.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",
@@ -87,7 +87,7 @@ func (h *Handler) GetColumnHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		id := ctx.Param("id")
 
-		userID, ok := auth.GetUserID(ctx)
+		userID, ok := authMiddleware.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",
@@ -120,7 +120,7 @@ func (h *Handler) UpdateColumnHandler() gin.HandlerFunc {
 
 		id := ctx.Param("id")
 
-		userID, ok := auth.GetUserID(ctx)
+		userID, ok := authMiddleware.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",
@@ -145,7 +145,7 @@ func (h *Handler) DeleteColumnHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		id := ctx.Param("id")
 
-		userID, ok := auth.GetUserID(ctx)
+		userID, ok := authMiddleware.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",

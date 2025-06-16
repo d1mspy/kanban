@@ -1,15 +1,16 @@
-package auth
+package authMiddleware
 
 import (
+	authService "kanban/internal/auth/service"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
-const userIDContextKey = "userID"
+const userIDContextKey string = "userID"
 
-func AuthMiddleware() gin.HandlerFunc {
+func Middleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		authHeader := ctx.GetHeader("Authorization")
 		if authHeader == "" {
@@ -27,7 +28,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 		
-		claims, err := ValidateJWT(parts[1])
+		claims, err := authService.ValidateJWT(parts[1])
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "Invalid or expire token",

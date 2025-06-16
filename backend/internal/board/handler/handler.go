@@ -1,7 +1,7 @@
 package boardHandler
 
 import (
-	"kanban/internal/auth"
+	authMiddleware "kanban/internal/auth/middleware"
 	boardModel "kanban/internal/board/model"
 	"log"
 	"net/http"
@@ -35,7 +35,7 @@ func (h *Handler) CreateBoardHandler() gin.HandlerFunc {
 			return
 		}
 
-		userID, ok := auth.GetUserID(ctx)
+		userID, ok := authMiddleware.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",
@@ -58,7 +58,7 @@ func (h *Handler) CreateBoardHandler() gin.HandlerFunc {
 
 func (h *Handler) GetAllBoardsHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		userID, ok := auth.GetUserID(ctx)
+		userID, ok := authMiddleware.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",
@@ -83,7 +83,7 @@ func (h *Handler) GetBoardHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		id := ctx.Param("id")
 
-		userID, ok := auth.GetUserID(ctx)
+		userID, ok := authMiddleware.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",
@@ -116,7 +116,7 @@ func (h *Handler) UpdateBoardHandler() gin.HandlerFunc {
 
 		id := ctx.Param("id")
 
-		userID, ok := auth.GetUserID(ctx)
+		userID, ok := authMiddleware.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",
@@ -140,7 +140,7 @@ func (h *Handler) DeleteBoardHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		id := ctx.Param("id")
 
-		userID, ok := auth.GetUserID(ctx)
+		userID, ok := authMiddleware.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",
