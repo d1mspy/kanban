@@ -1,10 +1,14 @@
 package columnService
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	columnModel "kanban/internal/column/model"
 	"kanban/internal/utils"
 )
+
+var ErrColumnNotFound = errors.New("column not found")
 
 type Repository interface {
 	Create(column columnModel.Column) error
@@ -51,6 +55,9 @@ func (s *Service) GetAllColumns(boardID string) ([]columnModel.Column, error) {
 func (s *Service) GetColumn(boardID string) (*columnModel.Column, error) {
 	column, err := s.repo.Get(boardID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("columnService.GetColumn: %w", ErrColumnNotFound)
+		}
 		return nil, fmt.Errorf("columnService.GetColumn: %w", err)
 	}
 
@@ -60,6 +67,9 @@ func (s *Service) GetColumn(boardID string) (*columnModel.Column, error) {
 func (s *Service) UpdateColumn(columnID string, newName *string, newPos *int) error {
 	err := s.repo.Update(columnID, newName, newPos)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("columnService.UpdateColumn: %w", ErrColumnNotFound)
+		}
 		return fmt.Errorf("columnService.UpdateColumn: %w", err)
 	}
 
@@ -69,6 +79,9 @@ func (s *Service) UpdateColumn(columnID string, newName *string, newPos *int) er
 func (s *Service) DeleteColumn(columnID string) error {
 	err := s.repo.Delete(columnID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("columnService.DeleteColumn: %w", ErrColumnNotFound)
+		}
 		return fmt.Errorf("columnService.DeleteColumn: %w", err)
 	}
 
@@ -76,9 +89,25 @@ func (s *Service) DeleteColumn(columnID string) error {
 }
 
 func (s *Service) GetUserByBoard(boardID string) (*string, error) {
-	return s.repo.GetUserByBoard(boardID)
+	userID, err := s.repo.GetUserByBoard(boardID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("columnService.GetUserByBoard: %w", ErrColumnNotFound)
+		}
+		return nil, fmt.Errorf("columnService.GetUserByBoard: %w", err)
+	}
+
+	return userID, nil
 }
 
 func (s *Service) GetUserByColumn(columnID string) (*string, error) {
-	return s.repo.GetUserByColumn(columnID)
+	userID, err := s.repo.GetUserByColumn(columnID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("columnService.GetUserByColumn: %w", ErrColumnNotFound)
+		}
+		return nil, fmt.Errorf("columnService.GetUserByColumn: %w", err)
+	}
+
+	return userID, nil
 }

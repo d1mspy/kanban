@@ -1,8 +1,11 @@
 package boardHandler
 
 import (
-	authMiddleware "kanban/internal/auth/middleware"
+	"errors"
+	authctx "kanban/internal/auth/context"
 	boardModel "kanban/internal/board/model"
+	boardProxy "kanban/internal/board/proxy"
+	boardService "kanban/internal/board/service"
 	"log"
 	"net/http"
 
@@ -35,7 +38,7 @@ func (h *Handler) CreateBoardHandler() gin.HandlerFunc {
 			return
 		}
 
-		userID, ok := authMiddleware.GetUserID(ctx)
+		userID, ok := authctx.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",
@@ -46,9 +49,7 @@ func (h *Handler) CreateBoardHandler() gin.HandlerFunc {
 		err := h.proxy.CreateBoard(userID, req.Name)
 		if err != nil {
 			log.Printf("Failed create board: %v\n", err)
-			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"detail": "Failed to create board",
-			})
+			h.handleError(ctx, err, "Failed to create board")
 			return
 		}
 
@@ -58,7 +59,7 @@ func (h *Handler) CreateBoardHandler() gin.HandlerFunc {
 
 func (h *Handler) GetAllBoardsHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		userID, ok := authMiddleware.GetUserID(ctx)
+		userID, ok := authctx.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",
@@ -69,9 +70,7 @@ func (h *Handler) GetAllBoardsHandler() gin.HandlerFunc {
 		boards, err := h.proxy.GetAllBoards(userID)
 		if err != nil {
 			log.Printf("Failed to get boards: %v", err)
-			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"detail": "Failed to get boards",
-			})
+			h.handleError(ctx, err, "Failed to get boards")
 			return
 		}
 
@@ -83,7 +82,7 @@ func (h *Handler) GetBoardHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		id := ctx.Param("id")
 
-		userID, ok := authMiddleware.GetUserID(ctx)
+		userID, ok := authctx.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",
@@ -94,9 +93,7 @@ func (h *Handler) GetBoardHandler() gin.HandlerFunc {
 		board, err := h.proxy.GetBoard(id, userID)
 		if err != nil {
 			log.Printf("Failed to get board: %v", err)
-			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"detail": "Failed to get board",
-			})
+			h.handleError(ctx, err, "Failed to get board")
 			return
 		}
 
@@ -116,7 +113,7 @@ func (h *Handler) UpdateBoardHandler() gin.HandlerFunc {
 
 		id := ctx.Param("id")
 
-		userID, ok := authMiddleware.GetUserID(ctx)
+		userID, ok := authctx.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",
@@ -126,9 +123,7 @@ func (h *Handler) UpdateBoardHandler() gin.HandlerFunc {
 
 		if err := h.proxy.UpdateBoard(id, req.Name, userID); err != nil {
 			log.Printf("Failed to update board: %v", err)
-			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"detail": "Failed to update board",
-			})
+			h.handleError(ctx, err, "Failed to update board")
 			return
 		}
 
@@ -140,7 +135,7 @@ func (h *Handler) DeleteBoardHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		id := ctx.Param("id")
 
-		userID, ok := authMiddleware.GetUserID(ctx)
+		userID, ok := authctx.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",
@@ -150,12 +145,27 @@ func (h *Handler) DeleteBoardHandler() gin.HandlerFunc {
 
 		if err := h.proxy.DeleteBoard(id, userID); err != nil {
 			log.Printf("Failed to delete board: %v", err)
-			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"detail": "Failed to delete board",
-			})
+			h.handleError(ctx, err, "Failed to delete board")
 			return
 		}
 
 		ctx.Status(http.StatusOK)
+	}
+}
+
+func (h *Handler) handleError(ctx *gin.Context, err error, message string) {
+	switch {
+	case errors.Is(err, boardProxy.ErrForbidden):
+		ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+			"detail": "Access denied",
+		})
+	case errors.Is(err, boardService.ErrBoardNotFound):
+		ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{
+			"detail": "Board not found",
+		})
+	default:
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"detail": message,
+		})
 	}
 }

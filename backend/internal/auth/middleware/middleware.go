@@ -1,14 +1,13 @@
 package authMiddleware
 
 import (
+	authctx "kanban/internal/auth/context"
 	authService "kanban/internal/auth/service"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 )
-
-const userIDContextKey string = "userID"
 
 func Middleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
@@ -36,16 +35,8 @@ func Middleware() gin.HandlerFunc {
 			return
 		}
 
-		ctx.Set(userIDContextKey, claims.UserID)
+		authctx.SetUserID(ctx, claims.UserID)
 
 		ctx.Next()
 	}
-}
-
-func GetUserID(ctx *gin.Context) (string, bool) {
-	userID, ok := ctx.Get(userIDContextKey)
-	if !ok {
-		return "", false
-	}
-	return userID.(string), true
 }

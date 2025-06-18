@@ -10,9 +10,8 @@ import (
 
 const maxTasks int = 52
 
-var errTaskNotFound error = errors.New("task not found")
-var errTaskLimitReached error = errors.New("task limit reached")
-var errIncorrectPosition error = errors.New("task position is greater than possible or not positive")
+var ErrTaskLimitReached error = errors.New("task limit reached")
+var ErrIncorrectPosition error = errors.New("task position is greater than possible or not positive")
 
 type Repository struct {
 	db *sql.DB
@@ -35,7 +34,7 @@ func (r *Repository) Create(task taskModel.Task) error {
 		return err
 	}
 	if count >= maxTasks {
-		return errTaskLimitReached
+		return ErrTaskLimitReached
 	}
 
 	err = tx.QueryRow(postgres.QueryGetMaxTaskPosition, task.ColumnID).Scan(&task.Position)
@@ -124,9 +123,6 @@ func (r *Repository) Get(taskID string) (*taskModel.Task, error) {
 		&task.Deadline,
 	)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errTaskNotFound
-		}
 		return nil, err
 	}
 
@@ -283,8 +279,8 @@ func getColumnIDAndPosition(tx *sql.Tx, taskID string) (string, int, error) {
 	var columnID string
 	var pos int
 	err := tx.QueryRow(postgres.QueryGetColumnIDAndPosition, taskID).Scan(&columnID, &pos)
-	if errors.Is(err, sql.ErrNoRows) {
-		return "", -1, errTaskNotFound
+	if err != nil {
+		return "", -1, err
 	}
 	return columnID, pos, err
 }
@@ -293,7 +289,7 @@ func checkPosition(tx *sql.Tx, columnID string, pos int) error {
 	var maxPos int
 	err := tx.QueryRow(postgres.QueryGetMaxTaskPosition, columnID).Scan(&maxPos)
 	if pos > maxPos || pos <= 0 {
-		return errIncorrectPosition
+		return ErrIncorrectPosition
 	}
 	return err
 }

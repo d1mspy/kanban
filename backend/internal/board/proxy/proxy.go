@@ -1,9 +1,12 @@
 package boardProxy
 
 import (
+	"errors"
 	"fmt"
 	boardModel "kanban/internal/board/model"
 )
+
+var ErrForbidden = errors.New("access denied")
 
 type Service interface {
 	CreateBoard(userID, name string) error
@@ -39,7 +42,7 @@ func (p *Proxy) GetBoard(boardID, userID string) (*boardModel.Board, error) {
 	if isOwner {
 		return p.service.GetBoard(boardID)
 	} else {
-		return nil, fmt.Errorf("boardProxy.GetBoard: this is not your board")
+		return nil, fmt.Errorf("boardProxy.GetBoard: %w", ErrForbidden)
 	}
 }
 
@@ -52,7 +55,7 @@ func (p *Proxy) UpdateBoard(boardID, name, userID string) error {
 	if isOwner {
 		return p.service.UpdateBoard(boardID, name)
 	} else {
-		return fmt.Errorf("this is not your board")
+		return fmt.Errorf("boardProxy.UpdateBoard: %w", ErrForbidden)
 	}
 }
 
@@ -65,7 +68,7 @@ func (p *Proxy) DeleteBoard(boardID, userID string) error {
 	if isOwner {
 		return p.service.DeleteBoard(boardID)
 	} else {
-		return fmt.Errorf("this is not your board")
+		return fmt.Errorf("boardProxy.DeleteBoard: %w", ErrForbidden)
 	}
 }
 

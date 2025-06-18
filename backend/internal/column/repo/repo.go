@@ -3,6 +3,7 @@ package columnRepo
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	columnModel "kanban/internal/column/model"
 	"kanban/internal/postgres"
 	"kanban/internal/utils"
@@ -10,9 +11,8 @@ import (
 
 const maxColumns int = 42
 
-var errColumnNotFound = errors.New("column not found")
-var errColumnLimitReached = errors.New("column limit reached")
-var errIncorrectPosition = errors.New("column position is greater than possible or not positive")
+var ErrColumnLimitReached = errors.New("column limit reached")
+var ErrIncorrectPosition = errors.New("column position is greater than possible or not positive")
 
 type Repository struct {
 	db *sql.DB
@@ -35,7 +35,7 @@ func (r *Repository) Create(column columnModel.Column) error {
 		return err
 	}
 	if count >= maxColumns {
-		return errColumnLimitReached
+		return ErrColumnLimitReached
 	}
 
 	err = tx.QueryRow(postgres.QueryGetMaxColumnPosition, column.BoardID).Scan(&column.Position)
@@ -101,9 +101,6 @@ func (r *Repository) Get(columnID string) (*columnModel.Column, error) {
 	)
 
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errColumnNotFound
-		}
 		return nil, err
 	}
 
@@ -121,9 +118,6 @@ func (r *Repository) Update(columnID string, newName *string, newPos *int) error
 	var oldPos int
 	err = tx.QueryRow(postgres.QueryGetBoardIDAndColumnPos, columnID).Scan(&boardID, &oldPos)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return errColumnNotFound
-		}
 		return err
 	}
 
@@ -134,7 +128,7 @@ func (r *Repository) Update(columnID string, newName *string, newPos *int) error
 			return err
 		}
 		if *newPos >= maxPos || *newPos <= 0 {
-			return errIncorrectPosition
+			return ErrIncorrectPosition
 		}
 	}
 	
@@ -168,9 +162,6 @@ func (r *Repository) Delete(columnID string) error {
 	var pos int
 	err = tx.QueryRow(postgres.QueryGetBoardIDAndColumnPos, columnID).Scan(&boardID, &pos)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return errColumnNotFound
-		}
 		return err
 	}
 
@@ -190,11 +181,17 @@ func (r *Repository) Delete(columnID string) error {
 func (r *Repository) GetUserByBoard(boardID string) (*string, error) {
 	var userID string
 	err := r.db.QueryRow(postgres.QueryGetUserByBoardID, boardID).Scan(&userID)
-	return &userID, err
+	if err != nil {
+		return nil, fmt.Errorf("columnRepo.GetUserByBoard: %w", err)
+	}
+	return &userID, nil
 }
 
 func (r *Repository) GetUserByColumn(columnID string) (*string, error) {
 	var userID string
 	err := r.db.QueryRow(postgres.QueryGetUserByColumnID, columnID).Scan(&userID)
-	return &userID, err
+	if err != nil {
+		return nil, fmt.Errorf("columnRepo.GetUserByColumn: %w", err)
+	}
+	return &userID, nil
 }

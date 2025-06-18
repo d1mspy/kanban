@@ -1,10 +1,14 @@
 package boardService
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	boardModel "kanban/internal/board/model"
 	"kanban/internal/utils"
 )
+
+var ErrBoardNotFound = errors.New("board not found")
 
 type Repository interface {
 	Create(board boardModel.Board) error
@@ -50,6 +54,9 @@ func (s *Service) GetAllBoards(userID string) ([]boardModel.Board, error) {
 func (s *Service) GetBoard(boardID string) (*boardModel.Board, error) {
 	board, err := s.repo.Get(boardID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("boardService.GetBoard: %w", ErrBoardNotFound)
+		}
 		return nil, fmt.Errorf("boardService.GetBoard: %w", err)
 	}
 
@@ -63,6 +70,9 @@ func (s *Service) UpdateBoard(boardID, name string) error {
 	}
 
 	if err := s.repo.Update(board); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("boardService.UpdateBoard: %w", ErrBoardNotFound)
+		}
 		return fmt.Errorf("boardService.UpdateBoard: %w", err)
 	}
 	
@@ -71,6 +81,9 @@ func (s *Service) UpdateBoard(boardID, name string) error {
 
 func (s *Service) DeleteBoard(boardID string) error {
 	if err := s.repo.Delete(boardID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("boardService.DeleteBoard: %w", ErrBoardNotFound)
+		}
 		return fmt.Errorf("boardService.DeleteBoard: %w", err)
 	}
 
@@ -78,5 +91,12 @@ func (s *Service) DeleteBoard(boardID string) error {
 }
 
 func (s *Service) GetUserByBoard(boardID string) (*string, error) {
-	return s.repo.GetUserByBoard(boardID)
+	userID, err := s.repo.GetUserByBoard(boardID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("boardService.GetUserByBoard: %w", ErrBoardNotFound)
+		}
+		return nil, fmt.Errorf("boardService.GetUserByBoard: %w", err)
+	}
+	return userID, nil
 }

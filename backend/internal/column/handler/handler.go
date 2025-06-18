@@ -1,8 +1,12 @@
 package columnHandler
 
 import (
-	authMiddleware "kanban/internal/auth/middleware"
+	"errors"
+	authctx "kanban/internal/auth/context"
 	columnModel "kanban/internal/column/model"
+	columnProxy "kanban/internal/column/proxy"
+	columnRepo "kanban/internal/column/repo"
+	columnService "kanban/internal/column/service"
 	"log"
 	"net/http"
 
@@ -35,7 +39,7 @@ func (h *Handler) CreateColumnHandler() gin.HandlerFunc {
 			return
 		}
 
-		userID, ok := authMiddleware.GetUserID(ctx)
+		userID, ok := authctx.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",
@@ -48,9 +52,7 @@ func (h *Handler) CreateColumnHandler() gin.HandlerFunc {
 		err := h.proxy.CreateColumn(boardID, *req.Name, userID);
 		if err != nil {
 			log.Printf("Failed to create column: %v", err)
-			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"detail": "Failed to create column",
-			})
+			h.handleError(ctx, err, "Failed to create column")
 			return
 		}
 
@@ -62,7 +64,7 @@ func (h *Handler) GetAllColumnsHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		boardID := ctx.Param("id")
 
-		userID, ok := authMiddleware.GetUserID(ctx)
+		userID, ok := authctx.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",
@@ -73,9 +75,7 @@ func (h *Handler) GetAllColumnsHandler() gin.HandlerFunc {
 		columns, err := h.proxy.GetAllColumns(boardID, userID)
 		if err != nil {
 			log.Printf("Failed to get columns: %v", err)
-			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"detail": "Failed to get all columns",
-			})
+			h.handleError(ctx, err, "Failed to get columns")
 			return
 		}
 
@@ -87,7 +87,7 @@ func (h *Handler) GetColumnHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		id := ctx.Param("id")
 
-		userID, ok := authMiddleware.GetUserID(ctx)
+		userID, ok := authctx.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",
@@ -98,9 +98,7 @@ func (h *Handler) GetColumnHandler() gin.HandlerFunc {
 		column, err := h.proxy.GetColumn(id, userID)
 		if err != nil {
 			log.Printf("Failed to get column: %v", err)
-			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"detail": "Failed to get column",
-			})
+			h.handleError(ctx, err, "Failed to get column")
 			return
 		}
 
@@ -120,7 +118,7 @@ func (h *Handler) UpdateColumnHandler() gin.HandlerFunc {
 
 		id := ctx.Param("id")
 
-		userID, ok := authMiddleware.GetUserID(ctx)
+		userID, ok := authctx.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",
@@ -131,9 +129,7 @@ func (h *Handler) UpdateColumnHandler() gin.HandlerFunc {
 		err := h.proxy.UpdateColumn(id, userID, req.Name, req.Position);
 		if err != nil {
 			log.Printf("Failed to update column: %v", err)
-			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"detail": "Failed to update column",
-			})
+			h.handleError(ctx, err, "Failed to update column")
 			return
 		}
 
@@ -145,7 +141,7 @@ func (h *Handler) DeleteColumnHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		id := ctx.Param("id")
 
-		userID, ok := authMiddleware.GetUserID(ctx)
+		userID, ok := authctx.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",
@@ -156,12 +152,35 @@ func (h *Handler) DeleteColumnHandler() gin.HandlerFunc {
 		err := h.proxy.DeleteColumn(id, userID);
 		if err != nil {
 			log.Printf("Failed to delete column: %v", err)
-			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"detail": "Failed to delete column",
-			})
+			h.handleError(ctx, err, "Failed to delete column")
 			return
 		}
 
 		ctx.Status(http.StatusOK)
+	}
+}
+
+func (h *Handler) handleError(ctx *gin.Context, err error, message string) {
+	switch {
+	case errors.Is(err, columnProxy.ErrForbidden):
+		ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+			"detail": "Access denied",
+		})
+	case errors.Is(err, columnService.ErrColumnNotFound):
+		ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{
+			"detail": "Column not found",
+		})
+	case errors.Is(err, columnRepo.ErrColumnLimitReached):
+		ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+			"detail": "Column limit reached",
+		})
+	case errors.Is(err, columnRepo.ErrIncorrectPosition):
+		ctx.AbortWithStatusJSON(http.StatusUnprocessableEntity, gin.H{
+			"detail": "Column position is greater than possible or not positive",
+		})
+	default:
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"detail": message,
+		})
 	}
 }

@@ -1,10 +1,15 @@
 package taskService
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	taskModel "kanban/internal/task/model"
 	"reflect"
 )
+
+var ErrTaskNotFound error = errors.New("task not found")
+var ErrBadUpdateRequest error = errors.New("invalid combination of fields")
 
 type updateCase string
 const (
@@ -61,6 +66,9 @@ func (s *Service) GetAllTasks(columnID string) ([]taskModel.Task, error) {
 func (s *Service) GetTask(taskID string) (*taskModel.Task, error) {
 	task, err := s.repo.Get(taskID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("taskService.GetTask: %w", ErrTaskNotFound)
+		}
 		return nil, fmt.Errorf("taskService.GetTask: %w", err)
 	}
 
@@ -79,10 +87,13 @@ func (s *Service) UpdateTask(req taskModel.UpdateTaskRequest, taskID string) err
 	case casePosition:
 		err = s.repo.UpdatePosition(req, taskID)
 	default:
-		return fmt.Errorf("taskService.UpdateTask: %w", err)
+		return fmt.Errorf("taskService.UpdateTask: %w", ErrBadUpdateRequest)
 	}
 
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("taskService.UpdateTask: %w", ErrTaskNotFound)
+		}
 		return fmt.Errorf("taskService.UpdateTask: %w", err)
 	}
 
@@ -92,6 +103,9 @@ func (s *Service) UpdateTask(req taskModel.UpdateTaskRequest, taskID string) err
 func (s *Service) DeleteTask(taskID string) error {
 	err := s.repo.Delete(taskID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("taskService.DeleteTask: %w", ErrTaskNotFound)
+		}
 		return fmt.Errorf("taskService.DeleteTask: %w", err)
 	}
 
@@ -100,11 +114,27 @@ func (s *Service) DeleteTask(taskID string) error {
 
 
 func (s *Service) GetUserByColumn(columnID string) (*string, error) {
-	return s.repo.GetUserByColumn(columnID)
+	userID, err := s.repo.GetUserByColumn(columnID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("taskService.GetUserByColumn: %w", ErrTaskNotFound)
+		}
+		return nil, fmt.Errorf("taskService.GetUserByColumn: %w", err)
+	}
+
+	return userID, nil
 }
 
 func (s *Service) GetUserByTask(taskID string) (*string, error) {
-	return s.repo.GetUserByTask(taskID)
+	userID, err := s.repo.GetUserByTask(taskID)
+		if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("taskService.GetUserByTask: %w", ErrTaskNotFound)
+		}
+		return nil, fmt.Errorf("taskService.GetUserByTask: %w", err)
+	}
+
+	return userID, nil
 }
 
 func validateUpdateTaskRequest(req taskModel.UpdateTaskRequest) updateCase {

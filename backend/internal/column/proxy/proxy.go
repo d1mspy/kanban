@@ -6,7 +6,7 @@ import (
 	columnModel "kanban/internal/column/model"
 )
 
-var errForbidden = errors.New("this is not your board")
+var ErrForbidden = errors.New("access denied")
 
 type Service interface {
 	CreateColumn(boardID, name string) error
@@ -35,7 +35,7 @@ func (p *Proxy) CreateColumn(boardID, name, userID string) error {
 	if isOwner {
 		return p.service.CreateColumn(boardID, name)
 	} else {
-		return errForbidden
+		return fmt.Errorf("columnProxy.CreateColumn: %w", ErrForbidden)
 	}
 }
 
@@ -48,7 +48,7 @@ func (p *Proxy) GetAllColumns(boardID, userID string) ([]columnModel.Column, err
 	if isOwner {
 		return p.service.GetAllColumns(boardID)
 	} else {
-		return nil, errForbidden
+		return nil, fmt.Errorf("columnProxy.GetAllColumns: %w", ErrForbidden)
 	}
 }
 
@@ -61,7 +61,7 @@ func (p *Proxy) GetColumn(columnID, userID string) (*columnModel.Column, error) 
 	if isOwner {
 		return p.service.GetColumn(columnID)
 	} else {
-		return nil, errForbidden
+		return nil, fmt.Errorf("columnProxy.GetColumn: %w", ErrForbidden)
 	}
 }
 
@@ -74,7 +74,7 @@ func (p *Proxy) UpdateColumn(columnID, userID string, newName *string, newPos *i
 	if isOwner {
 		return p.service.UpdateColumn(columnID, newName, newPos)
 	} else {
-		return errForbidden
+		return fmt.Errorf("columnProxy.UpdateColumn: %w", ErrForbidden)
 	}
 }
 
@@ -87,7 +87,7 @@ func (p *Proxy) DeleteColumn(columnID, userID string) error {
 	if isOwner {
 		return p.service.DeleteColumn(columnID)
 	} else {
-		return errForbidden
+		return fmt.Errorf("columnProxy.DeleteColumn: %w", ErrForbidden)
 	}
 }
 

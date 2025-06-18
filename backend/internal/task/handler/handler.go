@@ -1,8 +1,12 @@
 package taskHandler
 
 import (
-	authMiddleware "kanban/internal/auth/middleware"
+	"errors"
+	authctx "kanban/internal/auth/context"
 	taskModel "kanban/internal/task/model"
+	taskProxy "kanban/internal/task/proxy"
+	taskRepo "kanban/internal/task/repo"
+	taskService "kanban/internal/task/service"
 	"log"
 	"net/http"
 
@@ -35,7 +39,7 @@ func (h *Handler) CreateTaskHandler() gin.HandlerFunc {
 			return
 		}
 
-		userID, ok := authMiddleware.GetUserID(ctx)
+		userID, ok := authctx.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",
@@ -48,9 +52,7 @@ func (h *Handler) CreateTaskHandler() gin.HandlerFunc {
 		err := h.proxy.CreateTask(columnID, req.Name, req.Description, userID); 
 		if err != nil {
 			log.Printf("Failed to create task: %v", err)
-			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"detail": "Failed to create task",
-			})
+			h.handleError(ctx, err, "Failed to create task")
 			return
 		} 
 
@@ -62,7 +64,7 @@ func (h *Handler) GetAllTasksHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		columnID := ctx.Param("id")
 
-		userID, ok := authMiddleware.GetUserID(ctx)
+		userID, ok := authctx.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",
@@ -73,9 +75,7 @@ func (h *Handler) GetAllTasksHandler() gin.HandlerFunc {
 		tasks, err := h.proxy.GetAllTasks(columnID, userID)
 		if err != nil {
 			log.Printf("Failed to get all tasks: %v", err)
-			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"detail": "Failed to get all tasks",
-			})
+			h.handleError(ctx, err, "Failed to get all tasks")
 			return
 		}
 
@@ -87,7 +87,7 @@ func (h *Handler) GetTaskHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		taskID := ctx.Param("id")
 
-		userID, ok := authMiddleware.GetUserID(ctx)
+		userID, ok := authctx.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",
@@ -98,9 +98,7 @@ func (h *Handler) GetTaskHandler() gin.HandlerFunc {
 		task, err := h.proxy.GetTask(taskID, userID)
 		if err != nil {
 			log.Printf("Failed to get task: %v", err)
-			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"detail": "Failed to get task",
-			})
+			h.handleError(ctx, err, "Failed to get task")
 			return
 		}
 
@@ -120,7 +118,7 @@ func (h *Handler) UpdateTaskHandler() gin.HandlerFunc {
 
 		taskID := ctx.Param("id")
 
-		userID, ok := authMiddleware.GetUserID(ctx)
+		userID, ok := authctx.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",
@@ -131,9 +129,7 @@ func (h *Handler) UpdateTaskHandler() gin.HandlerFunc {
 		err := h.proxy.UpdateTask(req, taskID, userID)
 		if err != nil {
 			log.Printf("Failed to update task: %v", err)
-			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"detail": "Failed to update task",
-			})
+			h.handleError(ctx, err, "Failed to update task")
 			return
 		}
 		
@@ -145,7 +141,7 @@ func (h *Handler) DeleteTaskHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		taskID := ctx.Param("id")
 
-		userID, ok := authMiddleware.GetUserID(ctx)
+		userID, ok := authctx.GetUserID(ctx)
 		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"detail": "No token",
@@ -155,12 +151,40 @@ func (h *Handler) DeleteTaskHandler() gin.HandlerFunc {
 
 		err := h.proxy.DeleteTask(taskID, userID);
 		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"detail": "Failed to delete task",
-			})
+			log.Printf("Failed to delete task: %v", err)
+			h.handleError(ctx, err, "Failed to delete task")
 			return
 		}
 
 		ctx.Status(http.StatusOK)
+	}
+}
+
+func (h *Handler) handleError(ctx *gin.Context, err error, message string) {
+	switch {
+	case errors.Is(err, taskProxy.ErrForbidden):
+		ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+			"detail": "Access denied",
+		})
+	case errors.Is(err, taskService.ErrBadUpdateRequest):
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"detail": "Invalid combination of fields",
+		})
+	case errors.Is(err, taskService.ErrTaskNotFound):
+		ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{
+			"detail": "Task not found",
+		})
+	case errors.Is(err, taskRepo.ErrTaskLimitReached):
+		ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+			"detail": "Task limit reached",
+		})
+	case errors.Is(err, taskRepo.ErrIncorrectPosition):
+		ctx.AbortWithStatusJSON(http.StatusUnprocessableEntity, gin.H{
+			"detail": "Task position is greater than possible or not positive",
+		})
+	default:
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"detail": message,
+		})
 	}
 }

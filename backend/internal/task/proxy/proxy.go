@@ -6,7 +6,7 @@ import (
 	taskModel "kanban/internal/task/model"
 )
 
-var errForbidden = errors.New("this is not your board")
+var ErrForbidden = errors.New("access denied")
 
 type Service interface {
 	CreateTask(columnID, name, description string) error
@@ -35,7 +35,7 @@ func (p *Proxy) CreateTask(columnID, name, description, userID string) error {
 	if isOwner {
 		return p.service.CreateTask(columnID, name, description)
 	} else {
-		return errForbidden
+		return fmt.Errorf("taskProxy.CreateTask: %w", ErrForbidden)
 	}
 }
 
@@ -48,7 +48,7 @@ func (p *Proxy) GetAllTasks(columnID, userID string) ([]taskModel.Task, error) {
 	if isOwner {
 		return p.service.GetAllTasks(columnID)
 	} else {
-		return nil, errForbidden
+		return nil, fmt.Errorf("taskProxy.GetAllTasks: %w", ErrForbidden)
 	}
 }
 
@@ -61,7 +61,7 @@ func (p *Proxy) GetTask(taskID, userID string) (*taskModel.Task, error) {
 	if isOwner {
 		return p.service.GetTask(taskID)
 	} else {
-		return nil, errForbidden
+		return nil, fmt.Errorf("taskProxy.GetTask: %w", ErrForbidden)
 	}
 }
 
@@ -74,7 +74,7 @@ func (p *Proxy) UpdateTask(req taskModel.UpdateTaskRequest, taskID, userID strin
 	if isOwner {
 		return p.service.UpdateTask(req, taskID)
 	} else {
-		return errForbidden
+		return fmt.Errorf("taskProxy.UpdateTask: %w", ErrForbidden)
 	}
 }
 
@@ -87,7 +87,7 @@ func (p *Proxy) DeleteTask(taskID, userID string) error {
 	if isOwner {
 		return p.service.DeleteTask(taskID)
 	} else {
-		return errForbidden
+		return fmt.Errorf("taskProxy.DeleteTask: %w", ErrForbidden)
 	}
 }
 
@@ -108,4 +108,3 @@ func (p *Proxy) checkTaskOwnership(taskID, userID string) (bool, error) {
 
 	return *realUserID == userID, nil
 }
-
