@@ -9,7 +9,7 @@ import (
 )
 
 func NewPostgres() *sql.DB {
-	db, err := sql.Open("postgres", config.Load().PostgresURI)
+	db, err := sql.Open("postgres", config.Get().PostgresURI)
 	if err != nil {
 		log.Fatal("Failed to open DB:", err)
 	}

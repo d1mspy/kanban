@@ -1,7 +1,9 @@
 package authHandler
 
 import (
+	"errors"
 	authModel "kanban/internal/auth/model"
+	authService "kanban/internal/auth/service"
 	"log"
 	"net/http"
 
@@ -57,9 +59,23 @@ func (h *Handler) LoginHandler() gin.HandlerFunc {
 		token, err := h.service.LoginUser(req)
 		if err != nil {
 			log.Printf("Failed to login: %v", err)
-			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"detail": "Failed to login",
-			})
+			switch {
+			case errors.Is(err, authService.ErrUserNotFound):
+				ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{
+					"detail": "User not found",
+				})
+				return
+			case errors.Is(err, authService.ErrIncorrectPassword):
+				ctx.AbortWithStatusJSON(http.StatusTeapot, gin.H{
+					"detail": "Check your password, bro",
+				})
+				return
+			default:
+				ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+					"detail": "Failed to login",
+				})
+				return
+			}
 		}
 
 		ctx.JSON(http.StatusOK, gin.H{"token": token})

@@ -2,13 +2,11 @@ package authRepo
 
 import (
 	"database/sql"
-	"errors"
+	"fmt"
 	authModel "kanban/internal/auth/model"
 	"kanban/internal/postgres"
 	"kanban/internal/utils"
 )
-
-var ErrUserNotFound = errors.New("user not found")
 
 type Repository struct {
 	db *sql.DB
@@ -25,8 +23,10 @@ func (r *Repository) Create(user authModel.User) error {
 		user.Password, 
 		utils.GenerateTimestamp(),
 	)
-
-	return err
+	if err != nil {
+		return fmt.Errorf("authRepo.Create: %w", err)
+	}
+	return nil
 }
 
 func (r *Repository) GetByUsername(username string) (*authModel.User, error) {
@@ -39,9 +39,8 @@ func (r *Repository) GetByUsername(username string) (*authModel.User, error) {
 			&user.Username, 
 			&user.Password,
 		)
-
-	if err == sql.ErrNoRows {
-		return nil, ErrUserNotFound
+	if err != nil {
+		return nil, fmt.Errorf("authRepo.GetByUsername: %w", err)
 	}
-	return &user, err
+	return &user, nil
 }
