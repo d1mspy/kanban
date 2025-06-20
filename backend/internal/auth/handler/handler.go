@@ -11,8 +11,8 @@ import (
 )
 
 type Service interface {
-	CreateUser(req authModel.Request) (*string, error)
-	LoginUser(req authModel.Request) (*string, error)
+	CreateUser(req authModel.RegisterRequest) (*string, error)
+	LoginUser(req authModel.LoginRequest) (*string, error)
 }
 
 type Handler struct {
@@ -25,7 +25,7 @@ func NewHandler(service Service) *Handler {
 
 func (h *Handler) RegisterHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		var req authModel.Request
+		var req authModel.RegisterRequest
 		if err := ctx.ShouldBindJSON(&req); err != nil {
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"detail": "Invalid request body",
@@ -48,7 +48,7 @@ func (h *Handler) RegisterHandler() gin.HandlerFunc {
 
 func (h *Handler) LoginHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		var req authModel.Request
+		var req authModel.LoginRequest
 		if err := ctx.ShouldBindJSON(&req); err != nil {
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"detail": "Invalid JSON body",

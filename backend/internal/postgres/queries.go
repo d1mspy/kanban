@@ -2,58 +2,16 @@ package postgres
 
 const (
 
-	// Creating tables
-
-	QueryCreateUserTable = `
-		CREATE TABLE IF NOT EXISTS "user"(
-		id uuid PRIMARY KEY,
-		created_at timestamptz NOT NULL,
-		username text NOT NULL UNIQUE,
-		hashed_password text NOT NULL
-	)`
-
-	QueryCreateBoardTable = `
-		CREATE TABLE IF NOT EXISTS board(
-		id uuid PRIMARY KEY,
-		user_id uuid REFERENCES "user"(id) ON DELETE CASCADE,
-		created_at timestamptz NOT NULL,
-		updated_at timestamptz NOT NULL,
-		name text NOT NULL
-	)`
-
-	QueryCreateColumnTable = `
-		CREATE TABLE IF NOT EXISTS "column"(
-		id uuid PRIMARY KEY,
-		board_id uuid REFERENCES board(id) ON DELETE CASCADE,
-		created_at timestamptz NOT NULL,
-		updated_at timestamptz NOT NULL,
-		name text NOT NULL,
-		position smallint NOT NULL
-	)`
-
-	QueryCreateTaskTable = `
-		CREATE TABLE IF NOT EXISTS task(
-		id uuid PRIMARY KEY,
-		column_id uuid REFERENCES "column"(id) ON DELETE CASCADE,
-		created_at timestamptz NOT NULL,
-		updated_at timestamptz NOT NULL,
-		name text NOT NULL,
-		description text NOT NULL,
-		position smallint NOT NULL,
-		done boolean NOT NULL DEFAULT false,
-		deadline timestamptz
-	)`
-
 	// Auth queries
 
 	QueryCreateUser = `
 		INSERT INTO "user" 
-		(id, username, hashed_password, created_at) 
-		VALUES ($1, $2, $3, $4)`
+		(id, username, email, hashed_password, created_at) 
+		VALUES ($1, $2, $3, $4, $5)`
 
-	QueryGetUserByUsername = `
-		SELECT id, username, hashed_password 
-		FROM "user" WHERE username=$1`
+	QueryGetUserByEmail = `
+		SELECT id, email, username, hashed_password 
+		FROM "user" WHERE email=$1`
 
 	// Board Queries
 

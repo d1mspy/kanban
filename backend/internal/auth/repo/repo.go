@@ -19,7 +19,9 @@ func NewRepository(db *sql.DB) *Repository {
 func (r *Repository) Create(user authModel.User) error {
 	_, err := r.db.Exec(
 		postgres.QueryCreateUser, 
-		user.ID, user.Username, 
+		user.ID, 
+		user.Username,
+		user.Email,
 		user.Password, 
 		utils.GenerateTimestamp(),
 	)
@@ -29,18 +31,19 @@ func (r *Repository) Create(user authModel.User) error {
 	return nil
 }
 
-func (r *Repository) GetByUsername(username string) (*authModel.User, error) {
+func (r *Repository) GetByEmail(email string) (*authModel.User, error) {
 	var user authModel.User
 	err := r.db.QueryRow(
-		postgres.QueryGetUserByUsername, 
-		username,
+		postgres.QueryGetUserByEmail, 
+		email,
 		).Scan(
 			&user.ID, 
+			&user.Email,
 			&user.Username, 
 			&user.Password,
 		)
 	if err != nil {
-		return nil, fmt.Errorf("authRepo.GetByUsername: %w", err)
+		return nil, fmt.Errorf("authRepo.GetByEmail: %w", err)
 	}
 	return &user, nil
 }

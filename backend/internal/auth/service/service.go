@@ -15,7 +15,7 @@ var ErrIncorrectPassword = errors.New("incorrect password")
 
 type Repository interface {
 	Create(user authModel.User) error
-	GetByUsername(username string) (*authModel.User, error)
+	GetByEmail(email string) (*authModel.User, error)
 }
 
 type Service struct {
@@ -26,7 +26,7 @@ func NewService(repo Repository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) CreateUser(req authModel.Request) (*string, error){
+func (s *Service) CreateUser(req authModel.RegisterRequest) (*string, error) {
 	hash, err := hashPassword(req.Password)
 	if err != nil {
 		return nil, fmt.Errorf("authService.CreateUser: %w", err)
@@ -34,6 +34,7 @@ func (s *Service) CreateUser(req authModel.Request) (*string, error){
 
 	user := authModel.User{
 		ID:       utils.NewUUID(),
+		Email:    req.Email,
 		Username: req.Username,
 		Password: hash,
 	}
@@ -51,8 +52,8 @@ func (s *Service) CreateUser(req authModel.Request) (*string, error){
 	return &token, nil
 }
 
-func (s *Service) LoginUser(req authModel.Request) (*string, error) {
-	user, err := s.repo.GetByUsername(req.Username)
+func (s *Service) LoginUser(req authModel.LoginRequest) (*string, error) {
+	user, err := s.repo.GetByEmail(req.Email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("authService.LoginUser: %w", ErrUserNotFound)
