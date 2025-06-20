@@ -78,12 +78,12 @@ func (r *Repository) Get(boardID string) (*boardModel.Board, error) {
 	return &board, nil
 }
 
-func (r *Repository) Update(board boardModel.Board) error {
+func (r *Repository) Update(boardID string, req boardModel.Request) error {
 	_, err := r.db.Exec(
 		postgres.QueryUpdateBoard, 
 		utils.GenerateTimestamp(), 
-		board.Name, 
-		board.ID, 
+		req.Name, 
+		boardID, 
 	)
 	
 	if err != nil {

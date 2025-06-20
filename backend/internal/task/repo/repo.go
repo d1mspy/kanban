@@ -134,7 +134,7 @@ func (r *Repository) Get(taskID string) (*taskModel.Task, error) {
 	return &task, nil
 }
 
-func (r *Repository) UpdateContent(updatedTask taskModel.UpdateTaskRequest, taskID string) error {
+func (r *Repository) UpdateContent(taskID string, req taskModel.UpdateRequest) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
@@ -143,10 +143,10 @@ func (r *Repository) UpdateContent(updatedTask taskModel.UpdateTaskRequest, task
 
 	_, err = tx.Exec(
 		postgres.QueryUpdateTaskContent,
-		updatedTask.Name,
-		updatedTask.Description,
-		updatedTask.Done,
-		updatedTask.Deadline,
+		req.Name,
+		req.Description,
+		req.Done,
+		req.Deadline,
 		utils.GenerateTimestamp(),
 		taskID,
 	)
@@ -157,7 +157,7 @@ func (r *Repository) UpdateContent(updatedTask taskModel.UpdateTaskRequest, task
 	return tx.Commit()
 }
 
-func (r *Repository) UpdateColumn(updatedTask taskModel.UpdateTaskRequest, taskID string) error {
+func (r *Repository) UpdateColumn(taskID string, req taskModel.UpdateRequest) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
@@ -169,20 +169,20 @@ func (r *Repository) UpdateColumn(updatedTask taskModel.UpdateTaskRequest, taskI
 		return err
 	}
 
-	err = checkPosition(tx, columnID, *updatedTask.Position)
+	err = checkPosition(tx, columnID, *req.Position)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(postgres.QueryMoveTasksForInsert, *updatedTask.ColumnID, *updatedTask.Position)
+	_, err = tx.Exec(postgres.QueryMoveTasksForInsert, *req.ColumnID, *req.Position)
 	if err != nil {
 		return err
 	}
 
 	_, err = tx.Exec(
 		postgres.QueryUpdateTaskColumn, 
-		updatedTask.ColumnID,
-		updatedTask.Position,
+		req.ColumnID,
+		req.Position,
 		utils.GenerateTimestamp(),
 		taskID,
 	)
@@ -199,7 +199,7 @@ func (r *Repository) UpdateColumn(updatedTask taskModel.UpdateTaskRequest, taskI
 	return tx.Commit()
 }
 
-func (r *Repository) UpdatePosition(updatedTask taskModel.UpdateTaskRequest, taskID string) error {
+func (r *Repository) UpdatePosition(taskID string, req taskModel.UpdateRequest) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
@@ -211,15 +211,15 @@ func (r *Repository) UpdatePosition(updatedTask taskModel.UpdateTaskRequest, tas
 		return err
 	}
 
-	err = checkPosition(tx, columnID, *updatedTask.Position + 1)
+	err = checkPosition(tx, columnID, *req.Position + 1)
 	if err != nil {
 		return err
 	}
 
-	if *updatedTask.Position > oldPos {
-		_, err = tx.Exec(postgres.QueryMoveTasksUp, columnID, oldPos, *updatedTask.Position)
-	} else if *updatedTask.Position < oldPos {
-		_, err = tx.Exec(postgres.QueryMoveTasksDown, columnID, *updatedTask.Position, oldPos)
+	if *req.Position > oldPos {
+		_, err = tx.Exec(postgres.QueryMoveTasksUp, columnID, oldPos, *req.Position)
+	} else if *req.Position < oldPos {
+		_, err = tx.Exec(postgres.QueryMoveTasksDown, columnID, *req.Position, oldPos)
 	}
 	if err != nil {
 		return err
@@ -227,7 +227,7 @@ func (r *Repository) UpdatePosition(updatedTask taskModel.UpdateTaskRequest, tas
 
 	_, err = tx.Exec(
 		postgres.QueryUpdateTaskPosition, 
-		updatedTask.Position, 
+		req.Position, 
 		utils.GenerateTimestamp(), 
 		taskID,
 	)

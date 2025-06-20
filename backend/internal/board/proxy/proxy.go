@@ -9,10 +9,10 @@ import (
 var ErrForbidden = errors.New("access denied")
 
 type Service interface {
-	CreateBoard(userID, name string) error
+	CreateBoard(userID string, req boardModel.Request) error
 	GetAllBoards(userID string) ([]boardModel.Board, error)
 	GetBoard(boardID string) (*boardModel.Board, error)
-	UpdateBoard(boardID, name string) error
+	UpdateBoard(boardID string, req boardModel.Request) error
 	DeleteBoard(boardID string) error
 	GetUserByBoard(boardID string) (*string, error)
 }
@@ -25,8 +25,8 @@ func NewProxy(service Service) *Proxy {
 	return &Proxy{service: service}
 }
 
-func (p *Proxy) CreateBoard(userID, name string) error {
-	return p.service.CreateBoard(userID, name)
+func (p *Proxy) CreateBoard(userID string, req boardModel.Request) error {
+	return p.service.CreateBoard(userID, req)
 }
 
 func (p *Proxy) GetAllBoards(userID string) ([]boardModel.Board, error) {
@@ -46,14 +46,14 @@ func (p *Proxy) GetBoard(boardID, userID string) (*boardModel.Board, error) {
 	}
 }
 
-func (p *Proxy) UpdateBoard(boardID, name, userID string) error {
+func (p *Proxy) UpdateBoard(boardID, userID string, req boardModel.Request) error {
 	isOwner, err := p.checkBoardOwnership(boardID, userID)
 	if err != nil {
 		return err
 	}
 
 	if isOwner {
-		return p.service.UpdateBoard(boardID, name)
+		return p.service.UpdateBoard(boardID, req)
 	} else {
 		return fmt.Errorf("boardProxy.UpdateBoard: %w", ErrForbidden)
 	}

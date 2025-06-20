@@ -14,10 +14,10 @@ import (
 )
 
 type Proxy interface {
-	CreateColumn(boardID, name, userID string) error
+	CreateColumn(boardID, userID string, req columnModel.CreateRequest) error
 	GetAllColumns(boardID, userID string) ([]columnModel.Column, error)
 	GetColumn(columnID, userID string) (*columnModel.Column, error)
-	UpdateColumn(columnID, userID string, newName *string, newPos *int) error
+	UpdateColumn(columnID, userID string, req columnModel.UpdateRequest) error
 	DeleteColumn(columnID, userID string) error
 }
 
@@ -31,7 +31,7 @@ func NewHandler(serv Proxy) *Handler {
 
 func (h *Handler) CreateColumnHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		var req columnModel.ColumnRequest
+		var req columnModel.CreateRequest
 		if err := ctx.ShouldBindBodyWithJSON(&req); err != nil {
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"detail": "Invalid request body",
@@ -49,7 +49,7 @@ func (h *Handler) CreateColumnHandler() gin.HandlerFunc {
 
 		boardID := ctx.Param("id")
 
-		err := h.proxy.CreateColumn(boardID, *req.Name, userID);
+		err := h.proxy.CreateColumn(boardID, userID, req);
 		if err != nil {
 			log.Printf("Failed to create column: %v", err)
 			h.handleError(ctx, err, "Failed to create column")
@@ -108,7 +108,7 @@ func (h *Handler) GetColumnHandler() gin.HandlerFunc {
 
 func (h *Handler) UpdateColumnHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		var req columnModel.ColumnRequest
+		var req columnModel.UpdateRequest
 		if err := ctx.ShouldBindJSON(&req); err != nil {
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"detail": "Invalid request body",
@@ -126,7 +126,7 @@ func (h *Handler) UpdateColumnHandler() gin.HandlerFunc {
 			return
 		}
 
-		err := h.proxy.UpdateColumn(id, userID, req.Name, req.Position);
+		err := h.proxy.UpdateColumn(id, userID, req);
 		if err != nil {
 			log.Printf("Failed to update column: %v", err)
 			h.handleError(ctx, err, "Failed to update column")

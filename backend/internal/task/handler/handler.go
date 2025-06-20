@@ -14,10 +14,10 @@ import (
 )
 
 type Proxy interface {
-	CreateTask(columnID, name, description, userID string) error
+	CreateTask(columnID, userID string, req taskModel.CreateRequest) error
 	GetAllTasks(columnID, userID string) ([]taskModel.Task, error)
 	GetTask(taskID, userID string) (*taskModel.Task, error)
-	UpdateTask(req taskModel.UpdateTaskRequest, taskID, userID string) error
+	UpdateTask(taskID, userID string, req taskModel.UpdateRequest) error
 	DeleteTask(taskID, userID string) error
 }
 
@@ -31,7 +31,7 @@ func NewHandler(proxy Proxy) *Handler {
 
 func (h *Handler) CreateTaskHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		var req taskModel.CreateTaskRequest
+		var req taskModel.CreateRequest
 		if err := ctx.ShouldBindJSON(&req); err != nil {
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"detail": "Invalid request body",
@@ -49,7 +49,7 @@ func (h *Handler) CreateTaskHandler() gin.HandlerFunc {
 
 		columnID := ctx.Param("id")
 
-		err := h.proxy.CreateTask(columnID, req.Name, req.Description, userID); 
+		err := h.proxy.CreateTask(columnID, userID, req); 
 		if err != nil {
 			log.Printf("Failed to create task: %v", err)
 			h.handleError(ctx, err, "Failed to create task")
@@ -108,7 +108,7 @@ func (h *Handler) GetTaskHandler() gin.HandlerFunc {
 
 func (h *Handler) UpdateTaskHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		var req taskModel.UpdateTaskRequest
+		var req taskModel.UpdateRequest
 		if err := ctx.ShouldBindJSON(&req); err != nil {
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"detail": "Invalid request body",
@@ -126,7 +126,7 @@ func (h *Handler) UpdateTaskHandler() gin.HandlerFunc {
 			return
 		}
 
-		err := h.proxy.UpdateTask(req, taskID, userID)
+		err := h.proxy.UpdateTask(taskID, userID, req)
 		if err != nil {
 			log.Printf("Failed to update task: %v", err)
 			h.handleError(ctx, err, "Failed to update task")

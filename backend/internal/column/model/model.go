@@ -11,7 +11,11 @@ type Column struct {
 	Position  int       `json:"position"`
 }
 
-type ColumnRequest struct {
+type CreateRequest struct {
+	Name string `json:"name" binding:"required"`
+}
+
+type UpdateRequest struct {
 	Name     *string `json:"name"`
 	Position *int    `json:"position"`
 }

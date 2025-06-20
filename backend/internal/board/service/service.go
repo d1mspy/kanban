@@ -14,7 +14,7 @@ type Repository interface {
 	Create(board boardModel.Board) error
 	GetAll(userID string) ([]boardModel.Board, error)
 	Get(boardID string) (*boardModel.Board, error)
-	Update(board boardModel.Board) error
+	Update(boardID string, req boardModel.Request) error
 	Delete(boardID string) error
 	GetUserByBoard(boardID string) (*string, error)
 }
@@ -27,11 +27,11 @@ func NewService(repo Repository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) CreateBoard(userID, name string) error {
+func (s *Service) CreateBoard(userID string, req boardModel.Request) error {
 	board := boardModel.Board{
 		ID:     utils.NewUUID(),
 		UserID: userID,
-		Name:   name,
+		Name:   req.Name,
 	}
 
 	err := s.repo.Create(board)
@@ -63,13 +63,9 @@ func (s *Service) GetBoard(boardID string) (*boardModel.Board, error) {
 	return board, nil
 }
 
-func (s *Service) UpdateBoard(boardID, name string) error {
-	board := boardModel.Board{
-		ID:     boardID,
-		Name:   name,
-	}
+func (s *Service) UpdateBoard(boardID string, req boardModel.Request) error {
 
-	if err := s.repo.Update(board); err != nil {
+	if err := s.repo.Update(boardID, req); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return fmt.Errorf("boardService.UpdateBoard: %w", ErrBoardNotFound)
 		}

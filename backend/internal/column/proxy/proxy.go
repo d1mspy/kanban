@@ -9,10 +9,10 @@ import (
 var ErrForbidden = errors.New("access denied")
 
 type Service interface {
-	CreateColumn(boardID, name string) error
+	CreateColumn(boardID string, req columnModel.CreateRequest) error
 	GetAllColumns(boardID string) ([]columnModel.Column, error)
 	GetColumn(boardID string) (*columnModel.Column, error)
-	UpdateColumn(columnID string, newName *string, newPos *int) error
+	UpdateColumn(columnID string, req columnModel.UpdateRequest) error
 	DeleteColumn(columnID string) error
 	GetUserByBoard(boardID string) (*string, error)
 	GetUserByColumn(columnID string) (*string, error)
@@ -26,14 +26,14 @@ func NewProxy(service Service) *Proxy {
 	return &Proxy{service: service}
 }
 
-func (p *Proxy) CreateColumn(boardID, name, userID string) error {
+func (p *Proxy) CreateColumn(boardID, userID string, req columnModel.CreateRequest) error {
 	isOwner, err := p.checkBoardOwnership(boardID, userID)
 	if err != nil {
 		return fmt.Errorf("columnProxy.CreateColumn: %w", err)
 	}
 
 	if isOwner {
-		return p.service.CreateColumn(boardID, name)
+		return p.service.CreateColumn(boardID, req)
 	} else {
 		return fmt.Errorf("columnProxy.CreateColumn: %w", ErrForbidden)
 	}
@@ -65,14 +65,14 @@ func (p *Proxy) GetColumn(columnID, userID string) (*columnModel.Column, error) 
 	}
 }
 
-func (p *Proxy) UpdateColumn(columnID, userID string, newName *string, newPos *int) error {
+func (p *Proxy) UpdateColumn(columnID, userID string, req columnModel.UpdateRequest) error {
 	isOwner, err := p.checkColumnOwnership(columnID, userID)
 	if err != nil {
 		return fmt.Errorf("columnProxy.UpdateColumn: %w", err)
 	}
 
 	if isOwner {
-		return p.service.UpdateColumn(columnID, newName, newPos)
+		return p.service.UpdateColumn(columnID, req)
 	} else {
 		return fmt.Errorf("columnProxy.UpdateColumn: %w", ErrForbidden)
 	}

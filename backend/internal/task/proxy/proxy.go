@@ -9,10 +9,10 @@ import (
 var ErrForbidden = errors.New("access denied")
 
 type Service interface {
-	CreateTask(columnID, name, description string) error
+	CreateTask(columnID string, req taskModel.CreateRequest) error
 	GetAllTasks(columnID string) ([]taskModel.Task, error)
 	GetTask(taskID string) (*taskModel.Task, error)
-	UpdateTask(req taskModel.UpdateTaskRequest, taskID string) error
+	UpdateTask(taskID string, req taskModel.UpdateRequest) error
 	DeleteTask(taskID string) error
 	GetUserByColumn(columnID string) (*string, error)
 	GetUserByTask(taskID string) (*string, error)
@@ -26,14 +26,14 @@ func NewProxy(service Service) *Proxy {
 	return &Proxy{service: service}
 }
 
-func (p *Proxy) CreateTask(columnID, name, description, userID string) error {
+func (p *Proxy) CreateTask(columnID, userID string, req taskModel.CreateRequest) error {
 	isOwner, err := p.checkColumnOwnership(columnID, userID)
 	if err != nil {
 		return fmt.Errorf("taskProxy.CreateTask: %w", err)
 	}
-
+ 
 	if isOwner {
-		return p.service.CreateTask(columnID, name, description)
+		return p.service.CreateTask(columnID, req)
 	} else {
 		return fmt.Errorf("taskProxy.CreateTask: %w", ErrForbidden)
 	}
@@ -65,14 +65,14 @@ func (p *Proxy) GetTask(taskID, userID string) (*taskModel.Task, error) {
 	}
 }
 
-func (p *Proxy) UpdateTask(req taskModel.UpdateTaskRequest, taskID, userID string) error {
+func (p *Proxy) UpdateTask(taskID, userID string, req taskModel.UpdateRequest) error {
 	isOwner, err := p.checkTaskOwnership(taskID, userID)
 	if err != nil {
 		return fmt.Errorf("taskProxy.UpdateTask: %w", err)
 	}
 
 	if isOwner {
-		return p.service.UpdateTask(req, taskID)
+		return p.service.UpdateTask(taskID, req)
 	} else {
 		return fmt.Errorf("taskProxy.UpdateTask: %w", ErrForbidden)
 	}

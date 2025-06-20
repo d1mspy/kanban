@@ -10,6 +10,6 @@ type Board struct {
 	Name      string    `json:"name"`
 }
 
-type BoardRequest struct {
-	Name string `json:"name"`
+type Request struct {
+	Name string `json:"name" binding:"required"`
 }

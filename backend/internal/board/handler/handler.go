@@ -13,10 +13,10 @@ import (
 )
 
 type Proxy interface {
-	CreateBoard(userID, name string) error
+	CreateBoard(userID string, req boardModel.Request) error
 	GetAllBoards(userID string) ([]boardModel.Board, error)
 	GetBoard(boardID, userID string) (*boardModel.Board, error)
-	UpdateBoard(boardID, name, userID string) error
+	UpdateBoard(boardID, userID string, req boardModel.Request) error
 	DeleteBoard(boardID, userID string) error
 }
 
@@ -30,7 +30,7 @@ func NewHandler(proxy Proxy) *Handler {
 
 func (h *Handler) CreateBoardHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		var req boardModel.BoardRequest
+		var req boardModel.Request
 		if err := ctx.ShouldBindJSON(&req); err != nil {
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"detail": "Invalid request body",
@@ -46,7 +46,7 @@ func (h *Handler) CreateBoardHandler() gin.HandlerFunc {
 			return
 		}
 
-		err := h.proxy.CreateBoard(userID, req.Name)
+		err := h.proxy.CreateBoard(userID, req)
 		if err != nil {
 			log.Printf("Failed create board: %v\n", err)
 			h.handleError(ctx, err, "Failed to create board")
@@ -103,7 +103,7 @@ func (h *Handler) GetBoardHandler() gin.HandlerFunc {
 
 func (h *Handler) UpdateBoardHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		var req boardModel.BoardRequest
+		var req boardModel.Request
 		if err := ctx.ShouldBindJSON(&req); err != nil {
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"detail": "Invalid request body",
@@ -111,7 +111,7 @@ func (h *Handler) UpdateBoardHandler() gin.HandlerFunc {
 			return
 		}
 
-		id := ctx.Param("id")
+		boardID := ctx.Param("id")
 
 		userID, ok := authctx.GetUserID(ctx)
 		if !ok {
@@ -121,7 +121,7 @@ func (h *Handler) UpdateBoardHandler() gin.HandlerFunc {
 			return
 		}
 
-		if err := h.proxy.UpdateBoard(id, req.Name, userID); err != nil {
+		if err := h.proxy.UpdateBoard(boardID, userID, req); err != nil {
 			log.Printf("Failed to update board: %v", err)
 			h.handleError(ctx, err, "Failed to update board")
 			return

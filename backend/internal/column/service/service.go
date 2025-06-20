@@ -28,11 +28,11 @@ func NewService(repo Repository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) CreateColumn(boardID, name string) error {
+func (s *Service) CreateColumn(boardID string, req columnModel.CreateRequest) error {
 	column := columnModel.Column{
 			ID: utils.NewUUID(),
 			BoardID: boardID,
-			Name: name,
+			Name: req.Name,
 	}
 
 	err := s.repo.Create(column)
@@ -64,8 +64,8 @@ func (s *Service) GetColumn(boardID string) (*columnModel.Column, error) {
 	return column, nil
 }
 
-func (s *Service) UpdateColumn(columnID string, newName *string, newPos *int) error {
-	err := s.repo.Update(columnID, newName, newPos)
+func (s *Service) UpdateColumn(columnID string, req columnModel.UpdateRequest) error {
+	err := s.repo.Update(columnID, req.Name, req.Position)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return fmt.Errorf("columnService.UpdateColumn: %w", ErrColumnNotFound)

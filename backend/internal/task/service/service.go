@@ -23,9 +23,9 @@ type Repository interface {
 	Create(task taskModel.Task) error
 	GetAll(columnID string) ([]taskModel.Task, error)
 	Get(taskID string) (*taskModel.Task, error)
-	UpdateContent(updatedTask taskModel.UpdateTaskRequest, taskID string) error
-	UpdateColumn(updatedTask taskModel.UpdateTaskRequest, taskID string) error
-	UpdatePosition(updatedTask taskModel.UpdateTaskRequest, taskID string) error
+	UpdateContent(taskID string, req taskModel.UpdateRequest) error
+	UpdateColumn(taskID string, req taskModel.UpdateRequest) error
+	UpdatePosition(taskID string, req taskModel.UpdateRequest) error
 	Delete(taskID string) error
 	GetUserByColumn(columnID string) (*string, error)
 	GetUserByTask(taskID string) (*string, error)
@@ -39,11 +39,10 @@ func NewService(repo Repository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) CreateTask(columnID, name, description string) error {
+func (s *Service) CreateTask(columnID string, req taskModel.CreateRequest) error {
 	task := taskModel.Task{
 		ColumnID: columnID,
-		Name: name,
-		Description: description,
+		Name: req.Name,
 	}
 
 	err := s.repo.Create(task)
@@ -75,17 +74,17 @@ func (s *Service) GetTask(taskID string) (*taskModel.Task, error) {
 	return task, nil
 }
 
-func (s *Service) UpdateTask(req taskModel.UpdateTaskRequest, taskID string) error {
+func (s *Service) UpdateTask(taskID string, req taskModel.UpdateRequest) error {
 	updCase := validateUpdateTaskRequest(req)
 
 	var err error
 	switch updCase {
 	case caseContent:
-		err = s.repo.UpdateContent(req, taskID)
+		err = s.repo.UpdateContent(taskID, req)
 	case caseColumn:
-		err = s.repo.UpdateColumn(req, taskID)
+		err = s.repo.UpdateColumn(taskID, req)
 	case casePosition:
-		err = s.repo.UpdatePosition(req, taskID)
+		err = s.repo.UpdatePosition(taskID, req)
 	default:
 		return fmt.Errorf("taskService.UpdateTask: %w", ErrBadUpdateRequest)
 	}
@@ -137,7 +136,7 @@ func (s *Service) GetUserByTask(taskID string) (*string, error) {
 	return userID, nil
 }
 
-func validateUpdateTaskRequest(req taskModel.UpdateTaskRequest) updateCase {
+func validateUpdateTaskRequest(req taskModel.UpdateRequest) updateCase {
 	contentFields := []any{
 		req.Name,
 		req.Description,

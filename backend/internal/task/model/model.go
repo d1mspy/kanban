@@ -14,12 +14,11 @@ type Task struct {
 	Deadline    *time.Time `json:"deadline"`
 }
 
-type CreateTaskRequest struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
+type CreateRequest struct {
+	Name string `json:"name" binding:"required"`
 }
 
-type UpdateTaskRequest struct {
+type UpdateRequest struct {
 	ColumnID    *string     `json:"column_id"`
 	Name        *string     `json:"name"`
 	Description *string     `json:"description"`
