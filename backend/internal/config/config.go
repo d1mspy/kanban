@@ -8,6 +8,7 @@ import (
 
 type Config struct {
 	PostgresURI string
+	DBname 		string
 	Host        string
 	JWTSecret   []byte
 }
@@ -22,6 +23,11 @@ func Load() {
 		pg := os.Getenv("POSTGRES")
 		if pg == "" {
 			log.Fatal("POSTGRES env is required")
+		}
+
+		dbName := os.Getenv("POSTGRES_DB")
+		if dbName == "" {
+			log.Fatal("POSTGRES_DB env is required")
 		}
 
 		host := os.Getenv("HOST")

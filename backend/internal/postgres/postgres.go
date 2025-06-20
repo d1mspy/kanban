@@ -6,7 +6,10 @@ import (
 	"log"
 	"time"
 
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/lib/pq"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 var (
@@ -23,10 +26,9 @@ func NewPostgres() *sql.DB {
 	for i := 1; i <= maxDBConnectAttempts; i++ {
 		if err = db.Ping(); err != nil {
 			log.Printf("Attempt %d: failed to ping DB: %v", i, err)
-		} else if err = InitDatabase(db); err != nil {
-			log.Printf("Attempt %d: failed to init DB: %v", i, err)
 		} else {
-			log.Println("DB is ready")
+			log.Println("DB is up, running migrations...")
+			runMigrations(db)
 			break
 		}
 		time.Sleep(dbConnectRetryDelay)
@@ -38,20 +40,23 @@ func NewPostgres() *sql.DB {
 	return db
 }
 
-
-func InitDatabase(db *sql.DB) error {
-	queries := []string{
-		QueryCreateUserTable,
-		QueryCreateBoardTable,
-		QueryCreateColumnTable,
-		QueryCreateTaskTable,
+func runMigrations(db *sql.DB) {
+	driver, err := postgres.WithInstance(db, &postgres.Config{})
+	if err != nil {
+		log.Fatalf("Failed to init migration driver: %v", err)
 	}
 
-	for _, q := range queries {
-		if _, err := db.Exec(q); err != nil {
-			return err
-		}
+	m, err := migrate.NewWithDatabaseInstance(
+		"file://db/migrations",
+		config.Get().DBname,
+		driver,
+	)
+	if err != nil {
+		log.Fatalf("Failed to create migrate instance: %v", err)
 	}
 
-	return nil
+	err = m.Up()
+	if err != nil && err != migrate.ErrNoChange {
+		log.Fatalf("Migration failed: %v", err)
+	}
 }

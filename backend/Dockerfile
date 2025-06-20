@@ -10,4 +10,5 @@ FROM ubuntu:22.04
 RUN mkdir /app
 WORKDIR /app
 COPY --from=builder /app/server .
+COPY --from=builder /app/db/migrations ./db/migrations
 CMD [ "./server" ]
